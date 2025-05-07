@@ -1,0 +1,143 @@
+﻿<Window x:Class="SectionCutter.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Section Cutter" Height="450" Width="800"
+        WindowStartupLocation="CenterScreen" Background="White">
+
+    <Window.Resources>
+        <SolidColorBrush x:Key="AccentBrush" Color="#ff8c69"/>
+        <SolidColorBrush x:Key="DefaultIconBg" Color="Black"/>
+        <SolidColorBrush x:Key="DefaultText" Color="White"/>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="50"/>
+            <ColumnDefinition x:Name="SidebarColumn" Width="200" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- Icon Panel -->
+        <StackPanel x:Name="IconPanel" Grid.Column="0" Background="{StaticResource DefaultIconBg}" Orientation="Vertical">
+            <!-- Section Cuts Icon -->
+            <Border x:Name="SectionCutsIconBorder" BorderThickness="2" Margin="5" BorderBrush="Transparent" CornerRadius="4">
+                <Button x:Name="SectionCutsBtn" Width="40" Height="40"
+                        Background="Transparent" BorderBrush="Transparent"
+                        ToolTip="Create Section Cuts" Click="CreateSectionCut_Click">
+                    <TextBlock Text="|||"
+                               Foreground="{StaticResource DefaultText}"
+                               FontSize="20" FontWeight="Bold"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"/>
+                </Button>
+            </Border>
+
+            <!-- Review Results Icon -->
+            <Border x:Name="ReviewResultsIconBorder" BorderThickness="2" Margin="5" BorderBrush="{StaticResource AccentBrush}">
+                <Button x:Name="ReviewResultsBtn" Width="40" Height="40"
+                        Background="Transparent" BorderBrush="Transparent"
+                        ToolTip="Review Results" Click="ReviewResults_Click">
+                    <TextBlock Text="VPM"
+                                   Foreground="{StaticResource DefaultText}"
+                                   FontWeight="Bold"
+                                   FontSize="12"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"/>
+                    
+                </Button>
+            </Border>
+
+            <!-- Sidebar Toggle -->
+            <Button Width="40" Height="40" Margin="5"
+                    Click="ToggleSidebarBtn_Click"
+                    Background="Transparent" BorderBrush="Transparent"
+                    ToolTip="Toggle Sidebar">
+                <TextBlock Text="⮞" FontSize="16" Foreground="White"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Button>
+        </StackPanel>
+
+        <!-- Sidebar -->
+        <StackPanel x:Name="Sidebar" Grid.Column="1" Background="Black" Orientation="Vertical">
+            <TextBlock Text="Section Cutter Tool" Margin="10"
+                       Foreground="White" FontWeight="Bold" FontSize="14"/>
+            <Button x:Name="SectionCutsSidebarBtn" Content="Create Section Cuts"
+                    Margin="10" Height="40"
+                    Foreground="White" Background="Black"
+                    FontWeight="Bold" BorderThickness="0"
+                    Click="CreateSectionCut_Click"/>
+
+            <Button x:Name="ReviewResultsSidebarBtn" Content="Review Results"
+                    Margin="10" Height="40"
+                    Foreground="White" Background="{StaticResource AccentBrush}"
+                    FontWeight="Bold" BorderThickness="0"
+                    Click="ReviewResults_Click"/>
+        </StackPanel>
+
+        <!-- Main Content -->
+        <!-- Create Section Cuts Content -->
+        <Grid Grid.Column="2" Name="CreateSectionCutsGrid" Background="White" Visibility="Collapsed">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <StackPanel Orientation="Vertical" VerticalAlignment="Top" HorizontalAlignment="Left" Width="300" Margin="10">
+
+                <!-- Get Start Node -->
+                <Button Content="Get Start Node"
+                Click="GetStartNode_Click"
+                Height="35"
+                Background="#ff8c69"
+                Foreground="White"
+                FontWeight="Bold"
+                BorderThickness="0" />
+                <TextBlock x:Name="StartNodeOutput"
+                   Text="[Start Node Info Here]"
+                   Foreground="Gray" Margin="0,0,0,10"/>
+
+                <!-- Get Areas -->
+                <Button Content="Get Areas"
+                Click="GetAreas_Click"
+                Height="35"
+                Background="#ff8c69"
+                Foreground="White"
+                FontWeight="Bold"
+                BorderThickness="0"/>
+                <TextBlock x:Name="AreasOutput"
+                   Text="[Area Info Here]"
+                   Foreground="Gray" Margin="0,0,0,20"/>
+
+                <!-- Vector Input -->
+                <TextBlock Text="X Vector" FontWeight="Bold"/>
+                <TextBox x:Name="XVectorInput"
+                 Height="30"
+                 PreviewTextInput="DecimalInput_PreviewTextInput"
+                 BorderBrush="Gray" BorderThickness="1" Padding="5" />
+
+                <TextBlock Text="Y Vector" FontWeight="Bold" Margin="0,10,0,0"/>
+                <TextBox x:Name="YVectorInput"
+                 Height="30"
+                 PreviewTextInput="DecimalInput_PreviewTextInput"
+                 BorderBrush="Gray" BorderThickness="1" Padding="5" />
+
+                <!-- Number of Sections -->
+                <TextBlock Text="Number of Sections" FontWeight="Bold" Margin="0,20,0,0"/>
+                <TextBox x:Name="NumSectionsInput"
+                 Height="30"
+                 PreviewTextInput="IntegerInput_PreviewTextInput"
+                 BorderBrush="Gray" BorderThickness="1" Padding="5" />
+
+            </StackPanel>
+        </Grid>
+
+        <!-- Review Results Content -->
+        <Grid Grid.Column="2" Name="ReviewResultsGrid" Background="White" Visibility="Visible">
+            <TextBlock Text="Review Results"
+               HorizontalAlignment="Center" VerticalAlignment="Center"
+               FontSize="20" Foreground="Black"/>
+        </Grid>
+    </Grid>
+</Window>
