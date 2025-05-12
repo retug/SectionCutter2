@@ -13,7 +13,7 @@ namespace SectionCutter
     {
         public void Main(ref cSapModel SapModel, ref cPluginCallback ISapPlugin)
         {
-            // Copy to locals (safe inside thread)
+            // Copy to locals (safe inside thread) test
             var localSapModel = SapModel;
             var localPlugin = ISapPlugin;
 
@@ -26,6 +26,7 @@ namespace SectionCutter
 
             uiThread.SetApartmentState(ApartmentState.STA);
             uiThread.Start();
+
         }
 
         public long Info(ref string Text)
