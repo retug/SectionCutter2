@@ -13,7 +13,7 @@ namespace SectionCutter
     {
         public void Main(ref cSapModel SapModel, ref cPluginCallback ISapPlugin)
         {
-            // Copy to locals (safe inside thread) test
+            // Copy to locals (safe inside thread) test test
             var localSapModel = SapModel;
             var localPlugin = ISapPlugin;
 
