@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -123,6 +124,48 @@ namespace SectionCutter
                 e.Handled = val < 1 || val > 1000;
             }
         }
+
+        private void PositiveIntegerInput_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        {
+            TextBox textBox = sender as TextBox;
+            string proposedText = GetProposedText(textBox, e.Text);
+
+            // Only allow digits
+            bool isDigitsOnly = Regex.IsMatch(e.Text, @"^\d+$");
+
+            // Try parse as integer and check bounds
+            if (isDigitsOnly && int.TryParse(proposedText, out int val))
+            {
+                e.Handled = !(val >= 1 && val <= 1000);
+            }
+            else
+            {
+                e.Handled = true;
+            }
+        }
+
+        private string GetProposedText(TextBox textBox, string input)
+        {
+            string currentText = textBox.Text;
+            int selectionStart = textBox.SelectionStart;
+            int selectionLength = textBox.SelectionLength;
+
+            return currentText.Remove(selectionStart, selectionLength)
+                              .Insert(selectionStart, input);
+        }
+
+        private void KipFtCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            if (KnMCheckBox != null)
+                KnMCheckBox.IsChecked = false;
+        }
+
+        private void KnMCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            if (KipFtCheckBox != null)
+                KipFtCheckBox.IsChecked = false;
+        }
+
 
     }
 }
