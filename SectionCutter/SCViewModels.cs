@@ -7,9 +7,9 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Input;
 
-namespace SectionCutter
+namespace SectionCutter.ViewModels
 {
-    class SCViewModels : INotifyPropertyChanged
+    public class SCViewModel : INotifyPropertyChanged
     {
         private SectionCut _sectionCut = new SectionCut();
         private bool _canCreate;
@@ -28,7 +28,7 @@ namespace SectionCutter
 
         public ICommand CreateCommand { get; }
 
-        public SCViewModels()
+        public SCViewModel()
         {
             CreateCommand = new RelayCommand(Create, () => CanCreate);
         }

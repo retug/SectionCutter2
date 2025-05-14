@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Security.Cryptography.X509Certificates;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
@@ -10,20 +11,30 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using ETABSv1;
+using SectionCutter.ViewModels;
 
 namespace SectionCutter
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
+    /// 
+    
+
     public partial class MainWindow : Window
     {
         private cPluginCallback _Plugin;
         private cSapModel _SapModel;
+        public SCViewModel ViewModel { get; set; }
 
         public MainWindow(cSapModel SapModel, cPluginCallback Plugin)
         {
+
             InitializeComponent();
+
+            
+            ViewModel = new SCViewModel();
+            this.DataContext = ViewModel;
             _SapModel = SapModel;
             _Plugin = Plugin;
 

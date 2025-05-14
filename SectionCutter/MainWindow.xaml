@@ -391,7 +391,9 @@
                         CornerRadius="8"
                         Padding="10"
                         HorizontalAlignment="Stretch">
-                                <Button x:Name="CreateSectionsButton"
+                        <Button x:Name="CreateSectionsButton"
+                                    Command="{Binding CreateCommand}"
+                                    IsEnabled="{Binding CanCreate}"
                                     Content="Create Sections"
                                     Height="30"
                                     FontWeight="Bold"
@@ -399,7 +401,7 @@
                                     Background="Gray"
                                     Foreground="White"
                                     BorderThickness="0"
-                                    IsEnabled="False"/>
+                                    />
                     </Border>
                 </Grid>
             </Grid>
