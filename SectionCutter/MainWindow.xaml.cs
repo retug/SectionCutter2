@@ -19,7 +19,7 @@ namespace SectionCutter
     /// Interaction logic for MainWindow.xaml
     /// </summary>
     /// 
-    
+
 
     public partial class MainWindow : Window
     {
@@ -32,7 +32,7 @@ namespace SectionCutter
 
             InitializeComponent();
 
-            
+
             ViewModel = new SCViewModel();
             this.DataContext = ViewModel;
             _SapModel = SapModel;
@@ -40,7 +40,7 @@ namespace SectionCutter
 
             this.Loaded += MainWindow_Loaded;
             this.Closed += MainWindow_Closed;
-            //test tssed
+            //test tssedadfad
         }
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -176,40 +176,5 @@ namespace SectionCutter
             if (KipFtCheckBox != null)
                 KipFtCheckBox.IsChecked = false;
         }
-
-        private void ValidateCreateButton()
-        {
-            bool isValid = double.TryParse(XVectorInput.Text, out double x) &&
-                           double.TryParse(YVectorInput.Text, out double y) &&
-                           double.TryParse(HeightAboveInput.Text, out double ha) &&
-                           double.TryParse(HeightBelowInput.Text, out double hb) &&
-                           int.TryParse(SectionCutCountInput.Text, out int count) &&
-                           !string.IsNullOrWhiteSpace(SectionCutTitleInput.Text);
-
-            CreateSectionsButton.IsEnabled = isValid;
-            CreateSectionsButton.Background = isValid
-                ? new SolidColorBrush((Color)ColorConverter.ConvertFromString("#ff8c69"))
-                : Brushes.Gray;
-        }
-
-        private void CreateSectionsButton_Click(object sender, RoutedEventArgs e)
-        {
-            var sectionCut = new SectionCut
-            {
-                StartNodeId = StartNodeOutput.Text,
-                AreaIds = new List<string> { AreasOutput.Text },
-                XVector = double.Parse(XVectorInput.Text),
-                YVector = double.Parse(YVectorInput.Text),
-                SectionCutPrefix = SectionCutTitleInput.Text,
-                HeightAbove = double.Parse(HeightAboveInput.Text),
-                HeightBelow = double.Parse(HeightBelowInput.Text),
-                NumberOfCuts = int.Parse(SectionCutCountInput.Text),
-                Units = KipFtCheckBox.IsChecked == true ? "kip, ft" : "kN, M"
-            };
-
-            MessageBox.Show($"SectionCut Created:\nPrefix = {sectionCut.SectionCutPrefix}\nX = {sectionCut.XVector}, Y = {sectionCut.YVector}");
-        }
-
-
     }
 }

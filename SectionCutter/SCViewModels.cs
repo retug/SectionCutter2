@@ -30,6 +30,8 @@ namespace SectionCutter.ViewModels
 
         public SCViewModel()
         {
+            SectionCut = new SectionCut();
+            SectionCut.PropertyChanged += (_, __) => ValidateFields(); // <<--- Add this
             CreateCommand = new RelayCommand(Create, () => CanCreate);
         }
 

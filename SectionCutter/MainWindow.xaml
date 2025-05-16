@@ -188,18 +188,20 @@
                             <StackPanel Grid.Column="0" Margin="0,0,10,0">
                                 <TextBlock Text="X Vector" FontWeight="Bold" Margin="5,0,0,5"/>
                                 <TextBox x:Name="XVectorInput"
-                                 Height="30"
-                                 PreviewTextInput="DecimalInput_PreviewTextInput"
-                                 BorderBrush="Gray" BorderThickness="1" Padding="5"/>
+                                     Text= "{Binding SectionCut.XVector, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     Height="30"
+                                     PreviewTextInput="DecimalInput_PreviewTextInput"
+                                     BorderBrush="Gray" BorderThickness="1" Padding="5"/>
                             </StackPanel>
 
                             <!-- Y Vector -->
                             <StackPanel Grid.Column="1">
                                 <TextBlock Text="Y Vector" FontWeight="Bold" Margin="0,0,0,5"/>
                                 <TextBox x:Name="YVectorInput"
-                                 Height="30"
-                                 PreviewTextInput="DecimalInput_PreviewTextInput"
-                                 BorderBrush="Gray" BorderThickness="1" Padding="5"/>
+                                     Text= "{Binding SectionCut.YVector, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     Height="30"
+                                     PreviewTextInput="DecimalInput_PreviewTextInput"
+                                     BorderBrush="Gray" BorderThickness="1" Padding="5"/>
                             </StackPanel>
                         </Grid>
                     </Border>
@@ -236,11 +238,11 @@
                         Panel.ZIndex="0">
                         <StackPanel>
                             <TextBox x:Name="SectionCutTitleInput"
+                                 Text="{Binding SectionCut.SectionCutPrefix, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                  Height="30"
                                  BorderBrush="Gray"
                                  BorderThickness="1"
-                                 Padding="5"
-                                 />
+                                 Padding="5" />
                         </StackPanel>
                     </Border>
 
@@ -275,24 +277,24 @@
                             <StackPanel Grid.Column="0" Margin="0,0,10,0">
                                 <TextBlock Text="Height Above" FontWeight="Bold" Margin="0,0,0,5"/>
                                 <TextBox x:Name="HeightAboveInput"
-                             Text="0.5"
-                             Height="30"
-                             BorderBrush="Gray"
-                             BorderThickness="1"
-                             Padding="5"
-                             PreviewTextInput="DecimalInput_PreviewTextInput"/>
+                                     Text="{Binding SectionCut.HeightAbove, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     Height="30"
+                                     BorderBrush="Gray"
+                                     BorderThickness="1"
+                                     Padding="5"
+                                     PreviewTextInput="DecimalInput_PreviewTextInput"/>
                             </StackPanel>
 
                             <!-- Height Below -->
                             <StackPanel Grid.Column="1">
                                 <TextBlock Text="Height Below" FontWeight="Bold" Margin="0,0,0,5"/>
                                 <TextBox x:Name="HeightBelowInput"
-                             Text="0.5"
-                             Height="30"
-                             BorderBrush="Gray"
-                             BorderThickness="1"
-                             Padding="5"
-                             PreviewTextInput="DecimalInput_PreviewTextInput"/>
+                                     Text="{Binding SectionCut.HeightAbove, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     Height="30"
+                                     BorderBrush="Gray"
+                                     BorderThickness="1"
+                                     Padding="5"
+                                     PreviewTextInput="DecimalInput_PreviewTextInput"/>
                             </StackPanel>
                         </Grid>
                     </Border>
@@ -327,27 +329,27 @@
                 HorizontalAlignment="Stretch"
                 Panel.ZIndex="0">
                         <StackPanel Orientation="Vertical">
-                            <TextBox x:Name="SectionCutCountInput"
-                         Height="30"
-                         BorderBrush="Gray"
-                         BorderThickness="1"
-                         Padding="5"
-                         PreviewTextInput="PositiveIntegerInput_PreviewTextInput"
-                         Text="1"
-                         MaxLength="4"/>
+                            <TextBox x:Name ="SectionCutCountInput"
+                                 Text="{Binding SectionCut.NumberOfCuts, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 Height="30"
+                                 BorderBrush="Gray"
+                                 BorderThickness="1"
+                                 Padding="5"
+                                 PreviewTextInput="PositiveIntegerInput_PreviewTextInput"
+                                 MaxLength="4"/>
                         </StackPanel>
                     </Border>
 
                     <TextBlock Text="Number of Section Cuts"
-                   FontWeight="Bold"
-                   FontSize="14"
-                   Background="White"
-                   Foreground="Black"
-                   Margin="10,-10,0,0"
-                   Padding="2,0"
-                   VerticalAlignment="Top"
-                   HorizontalAlignment="Left"
-                   Panel.ZIndex="1"/>
+                        FontWeight="Bold"
+                        FontSize="14"
+                        Background="White"
+                        Foreground="Black"
+                        Margin="10,-10,0,0"
+                        Padding="2,0"
+                        VerticalAlignment="Top"
+                        HorizontalAlignment="Left"
+                        Panel.ZIndex="1"/>
                 </Grid>
 
                 <!-- Units Selection -->
@@ -397,7 +399,7 @@
                                     Content="Create Sections"
                                     Height="30"
                                     FontWeight="Bold"
-                                    Click="CreateSectionsButton_Click"
+
                                     Background="Gray"
                                     Foreground="White"
                                     BorderThickness="0"
