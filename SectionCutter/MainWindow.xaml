@@ -289,7 +289,7 @@
                             <StackPanel Grid.Column="1">
                                 <TextBlock Text="Height Below" FontWeight="Bold" Margin="0,0,0,5"/>
                                 <TextBox x:Name="HeightBelowInput"
-                                     Text="{Binding SectionCut.HeightAbove, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     Text="{Binding SectionCut.HeightBelow, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                      Height="30"
                                      BorderBrush="Gray"
                                      BorderThickness="1"
@@ -399,7 +399,6 @@
                                     Content="Create Sections"
                                     Height="30"
                                     FontWeight="Bold"
-
                                     Background="Gray"
                                     Foreground="White"
                                     BorderThickness="0"
