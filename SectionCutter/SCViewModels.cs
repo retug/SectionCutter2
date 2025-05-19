@@ -5,15 +5,19 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Input;
+using ETABSv1;
 
 namespace SectionCutter.ViewModels
 {
     public class SCViewModel : INotifyPropertyChanged
     {
+        private readonly cSapModel _sapModel;
         private SectionCut _sectionCut = new SectionCut();
         private bool _canCreate;
-
+        private string _startNodeOutputText = "[Start Node Info Here]";
+        
         public SectionCut SectionCut
         {
             get => _sectionCut;
@@ -27,12 +31,15 @@ namespace SectionCutter.ViewModels
         }
 
         public ICommand CreateCommand { get; }
+        public ICommand GetStartNodeCommand { get; }
 
-        public SCViewModel()
+        public SCViewModel(cSapModel sapModel)
         {
+            _sapModel = sapModel;
             SectionCut = new SectionCut();
-            SectionCut.PropertyChanged += (_, __) => ValidateFields(); // <<--- Add this
+            SectionCut.PropertyChanged += (_, __) => ValidateFields(); 
             CreateCommand = new RelayCommand(Create, () => CanCreate);
+            GetStartNodeCommand = new RelayCommand(ExecuteGetStartNode, () => true); 
         }
 
         public void ValidateFields()
@@ -53,6 +60,36 @@ namespace SectionCutter.ViewModels
             // Logic to handle the creation
             System.Windows.MessageBox.Show($"SectionCut Created:\nPrefix = {SectionCut.SectionCutPrefix}\nX = {SectionCut.XVector}, Y = {SectionCut.YVector}");
         }
+
+        private void ExecuteGetStartNode()
+        {
+            int numberItems = 0;
+            int[] objectType = null;
+            string[] objectName = null;
+            _sapModel.SelectObj.GetSelected(ref numberItems, ref objectType, ref objectName);
+
+            if (objectType == null)
+            {
+                MessageBox.Show("Select node first, then click the button");
+                return;
+            }
+
+            if (objectType.Length > 1 || objectType[0] != 1)
+            {
+                MessageBox.Show("Select only one node");
+                return;
+            }
+
+            SectionCut.StartNodeId = objectName[0];
+            StartNodeOutputText = $"Unique ID selected = \"{objectName[0]}\"";
+        }
+
+        public string StartNodeOutputText
+        {
+            get => _startNodeOutputText;
+            set => SetProperty(ref _startNodeOutputText, value);
+        }
+
 
         public event PropertyChangedEventHandler PropertyChanged;
 

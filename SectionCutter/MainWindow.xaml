@@ -131,14 +131,15 @@
                             <!-- Get Start Node -->
                             <StackPanel Grid.Column="0">
                                 <Button Content="Get Start Node"
-                                Style="{StaticResource HoverAccentButton}"
-                                Click="GetStartNode_Click"
-                                Height="35"
-                                Margin="5,5,5,5"/>
+                                    Style="{StaticResource HoverAccentButton}"
+                                    Command="{Binding GetStartNodeCommand}"
+                                    Height="35"
+                                    Margin="5,5,5,5"/>
                                 <TextBlock x:Name="StartNodeOutput"
-                                   Text="[Start Node Info Here]"
+                                   Text="{Binding StartNodeOutputText}"
                                    Foreground="Gray"
                                    Margin="5,0,0,0"/>
+                                
                             </StackPanel>
 
                             <!-- Get Areas -->

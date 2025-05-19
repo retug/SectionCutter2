@@ -31,12 +31,15 @@ namespace SectionCutter
         {
 
             InitializeComponent();
-
-
-            ViewModel = new SCViewModel();
-            this.DataContext = ViewModel;
             _SapModel = SapModel;
             _Plugin = Plugin;
+
+            ViewModel = new SCViewModel(SapModel);
+            // ViewModel = new SCViewModel();
+            this.DataContext = ViewModel;
+            
+
+            
 
             this.Loaded += MainWindow_Loaded;
             this.Closed += MainWindow_Closed;
@@ -107,10 +110,6 @@ namespace SectionCutter
             SetSelected("results");
         }
 
-        private void GetStartNode_Click(object sender, RoutedEventArgs e)
-        {
-            StartNodeOutput.Text = "Start node selected [mock]";
-        }
 
         private void GetAreas_Click(object sender, RoutedEventArgs e)
         {
