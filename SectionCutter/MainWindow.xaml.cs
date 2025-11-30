@@ -1,15 +1,9 @@
-﻿using System.Security.Cryptography.X509Certificates;
-using System.Text;
+﻿using System;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using ETABSv1;
 using SectionCutter.ViewModels;
 
@@ -18,9 +12,6 @@ namespace SectionCutter
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    /// 
-
-
     public partial class MainWindow : Window
     {
         private cPluginCallback _Plugin;
@@ -29,34 +20,26 @@ namespace SectionCutter
 
         public MainWindow(cSapModel SapModel, cPluginCallback Plugin)
         {
-
             InitializeComponent();
+
             _SapModel = SapModel;
             _Plugin = Plugin;
 
-            ViewModel = new SCViewModel(SapModel);
-            // ViewModel = new SCViewModel();
-            this.DataContext = ViewModel;
-            
+            // Create the ETABS-backed SectionCut service and inject into the ViewModel
+            ISectionCutService service = new EtabsSectionCutService(_SapModel);
+            ViewModel = new SCViewModel(_SapModel, service);
 
-            
+            this.DataContext = ViewModel;
 
             this.Loaded += MainWindow_Loaded;
             this.Closed += MainWindow_Closed;
-            //test tssedadfad
         }
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
-
+            // Any window initialization you need
         }
 
-
-
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-
-        }
         private void MainWindow_Closed(object sender, EventArgs e)
         {
             _Plugin?.Finish(0);
@@ -100,6 +83,7 @@ namespace SectionCutter
                 ReviewResultsGrid.Visibility = Visibility.Visible;
             }
         }
+
         private void CreateSectionCut_Click(object sender, RoutedEventArgs e)
         {
             SetSelected("cuts");
@@ -110,19 +94,28 @@ namespace SectionCutter
             SetSelected("results");
         }
 
-
         private void GetAreas_Click(object sender, RoutedEventArgs e)
         {
-            AreasOutput.Text = "Areas retrieved [mock]";
+            // Delegate to the ViewModel
+            ViewModel.GetAreasFromSelection();
+
+            // Update the UI text if not yet bound via XAML
+            AreasOutput.Text = ViewModel.AreasOutputText;
         }
 
-        private void DecimalInput_PreviewTextInput(object sender, System.Windows.Input.TextCompositionEventArgs e)
+        private void DecimalInput_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
-            // Allow digits and one decimal
-            e.Handled = !decimal.TryParse(((TextBox)sender).Text + e.Text, out decimal result) || result < 0;
+            // Allow digits and one decimal, non-negative
+            TextBox textBox = sender as TextBox;
+            string proposed = GetProposedText(textBox, e.Text);
+
+            if (!decimal.TryParse(proposed, out decimal result) || result < 0)
+            {
+                e.Handled = true;
+            }
         }
 
-        private void IntegerInput_PreviewTextInput(object sender, System.Windows.Input.TextCompositionEventArgs e)
+        private void IntegerInput_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
             // Only allow integers 1–1000
             if (!int.TryParse(((TextBox)sender).Text + e.Text, out int val))
@@ -168,12 +161,24 @@ namespace SectionCutter
         {
             if (KnMCheckBox != null)
                 KnMCheckBox.IsChecked = false;
+
+            if (ViewModel?.SectionCut != null)
+            {
+                ViewModel.SectionCut.Units = "kip, ft";
+                ViewModel.ValidateFields();
+            }
         }
 
         private void KnMCheckBox_Checked(object sender, RoutedEventArgs e)
         {
             if (KipFtCheckBox != null)
                 KipFtCheckBox.IsChecked = false;
+
+            if (ViewModel?.SectionCut != null)
+            {
+                ViewModel.SectionCut.Units = "kN, m";
+                ViewModel.ValidateFields();
+            }
         }
     }
 }
