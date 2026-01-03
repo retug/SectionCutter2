@@ -408,26 +408,109 @@ namespace SectionCutter
         /// <summary>
         /// Writes the prepared section cut records into the ETABS database table.
         /// </summary>
-        private void WriteSectionCutTableToEtabs(List<List<string>> etabsSectionCutData)
+        private void WriteSectionCutTableToEtabs(List<List<string>> newRows)
         {
+            if (newRows == null || newRows.Count == 0)
+                return;
+
             string tableKey = "Section Cut Definitions";
 
-            // Field names
+            // Field names (must match what ETABS expects for this table)
             string[] fieldKeys = new string[]
             {
-                "Name", "DefinedBy", "Group", "ResultType", "ResultLoc",
-                "RotAboutZ", "RotAboutY", "RotAboutX",
-                "ElementSide", "NumQuads", "QuadNum", "PointNum",
-                "QuadX", "QuadY", "QuadZ", "GUID"
+        "Name", "DefinedBy", "Group", "ResultType", "ResultLoc",
+        "RotAboutZ", "RotAboutY", "RotAboutX",
+        "ElementSide", "NumQuads", "QuadNum", "PointNum",
+        "QuadX", "QuadY", "QuadZ", "GUID"
             };
 
-            // Flatten row-wise
-            string[] tableData = etabsSectionCutData.SelectMany(row => row).ToArray();
-
+            // ----------------------------
+            // 1) Read existing table rows
+            // ----------------------------
+            string[] fieldKeyList = null;
+            string groupName = "All";
             int tableVersion = 1;
-            int numberRecords = etabsSectionCutData.Count;
+            string[] fieldKeysIncluded = null;
+            int existingRecords = 0;
+            string[] existingData = null;
 
-            int ret = _sapModel.DatabaseTables.SetTableForEditingArray(
+            int ret = _sapModel.DatabaseTables.GetTableForDisplayArray(
+                tableKey,
+                ref fieldKeyList,
+                groupName,
+                ref tableVersion,
+                ref fieldKeysIncluded,
+                ref existingRecords,
+                ref existingData);
+
+            // If ETABS can't read it, we fall back to "write only new"
+            // (but do not crash; still allows creation in a fresh model)
+            var combinedRows = new List<List<string>>();
+
+            // Normalize new rows (ensure correct column count)
+            int cols = fieldKeys.Length;
+            var normalizedNew = newRows
+                .Where(r => r != null)
+                .Select(r => r.Count == cols ? r : PadOrTrim(r, cols))
+                .ToList();
+
+            // ----------------------------
+            // 2) Build a key for duplicate protection
+            //    (Name + QuadNum + PointNum) is usually enough
+            // ----------------------------
+            static string MakeKey(List<string> row)
+            {
+                string name = row[0] ?? "";
+                string quadNum = row[10] ?? "";
+                string pointNum = row[11] ?? "";
+                return $"{name}||{quadNum}||{pointNum}";
+            }
+
+            var newKeys = new HashSet<string>(normalizedNew.Select(MakeKey), StringComparer.OrdinalIgnoreCase);
+
+            if (ret == 0 && existingRecords > 0 && existingData != null && fieldKeysIncluded != null)
+            {
+                // We must map the "included" fields to our fieldKeys order
+                // so we can re-write the full table with a consistent schema.
+                var idxMap = BuildIndexMap(fieldKeysIncluded, fieldKeys);
+
+                int nf = fieldKeysIncluded.Length;
+
+                for (int r = 0; r < existingRecords; r++)
+                {
+                    int b = r * nf;
+                    if (b + nf > existingData.Length) break;
+
+                    var row = new List<string>(cols);
+
+                    for (int c = 0; c < cols; c++)
+                    {
+                        int src = idxMap[c];
+                        row.Add(src >= 0 ? existingData[b + src] : "");
+                    }
+
+                    // Skip any existing rows that collide with what we’re adding
+                    // (prevents re-adding same Name/Quad/Point)
+                    if (!newKeys.Contains(MakeKey(row)))
+                        combinedRows.Add(row);
+                }
+            }
+
+            // ----------------------------
+            // 3) Append new rows
+            // ----------------------------
+            combinedRows.AddRange(normalizedNew);
+
+            // Flatten row-wise
+            string[] tableData = combinedRows.SelectMany(r => r).ToArray();
+            int numberRecords = combinedRows.Count;
+
+            // ----------------------------
+            // 4) Write back combined table
+            // ----------------------------
+            tableVersion = 1; // safe default for editing
+
+            ret = _sapModel.DatabaseTables.SetTableForEditingArray(
                 tableKey,
                 ref tableVersion,
                 ref fieldKeys,
@@ -457,6 +540,25 @@ namespace SectionCutter
                 throw new InvalidOperationException(
                     $"ETABS ApplyEditedTables failed. FatalErrors={numFatalErrors}, Errors={numErrorMsgs}, Log={importLog}");
             }
+        }
+
+        private static List<string> PadOrTrim(List<string> row, int cols)
+        {
+            var r = row.ToList();
+            if (r.Count > cols) r = r.Take(cols).ToList();
+            while (r.Count < cols) r.Add("");
+            return r;
+        }
+
+        private static int[] BuildIndexMap(string[] included, string[] desired)
+        {
+            // returns for each desired column, the index in included (or -1)
+            var map = new int[desired.Length];
+            for (int i = 0; i < desired.Length; i++)
+            {
+                map[i] = Array.FindIndex(included, k => string.Equals(k, desired[i], StringComparison.OrdinalIgnoreCase));
+            }
+            return map;
         }
 
         #endregion
