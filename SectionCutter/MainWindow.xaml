@@ -91,9 +91,15 @@
         <Grid Grid.Column="2" Name="CreateSectionCutsGrid" Background="White" Visibility="Visible">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
+                <!-- Row 0: Title -->
                 <RowDefinition Height="Auto"/>
+                <!-- Row 1: Selections + Vector -->
                 <RowDefinition Height="Auto"/>
+                <!-- Row 2: Prefix + Depth -->
                 <RowDefinition Height="Auto"/>
+                <!-- Row 3: Cuts + Units + Create -->
+                <RowDefinition Height="*"/>
+                <!-- Row 4: NEW - Results + Plot -->
             </Grid.RowDefinitions>
 
             <!-- Title and Divider -->
@@ -407,6 +413,122 @@
                     </Border>
                 </Grid>
             </Grid>
+            <!-- ================================================== -->
+            <!-- NEW Row 4: Section Cuts Created + Details + Plot -->
+            <!-- ================================================== -->
+            <Border Grid.Row="4"
+            Margin="10,0,10,10"
+            Padding="12"
+            Background="White"
+            CornerRadius="8"
+            BorderBrush="LightGray"
+            BorderThickness="1">
+
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <!-- title -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- dropdown -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- start node + vector -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- lists -->
+                        <RowDefinition Height="*"/>
+                        <!-- plot -->
+                    </Grid.RowDefinitions>
+
+                    <!-- Title and Divider -->
+                    <StackPanel Grid.Row="0" Orientation="Vertical">
+                        <TextBlock Text="Section Cuts Created"
+                           FontSize="24"
+                           FontWeight="Bold"
+                           Foreground="Black"
+                           Margin="0,0,0,10"
+                           Padding="10,0,0,0"/>
+                        <Border Height="1" Background="LightGray" HorizontalAlignment="Stretch"/>
+                    </StackPanel>
+
+                    <!-- Dropdown -->
+                    <StackPanel Grid.Row="1" Margin="0,12,0,0">
+                        <TextBlock Text="Created Section Cut Set"
+                           FontWeight="SemiBold"
+                           Margin="0,0,0,6"/>
+                        <ComboBox ItemsSource="{Binding SectionCutPrefixes}"
+                          SelectedItem="{Binding SelectedPrefix}"
+                          Height="30"/>
+                    </StackPanel>
+
+                    <!-- Start node + vector -->
+                    <Grid Grid.Row="2" Margin="0,12,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Start Node ID" FontWeight="SemiBold"/>
+                            <TextBlock Text="{Binding SelectedCreatedSet.StartNodeId}" Margin="0,4,0,0"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1">
+                            <TextBlock Text="Vector Direction" FontWeight="SemiBold"/>
+                            <TextBlock Text="{Binding SelectedCreatedSet.VectorLabel}" Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Area / Opening lists -->
+                    <Grid Grid.Row="3" Margin="0,12,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0" Margin="0,0,10,0">
+                            <TextBlock Text="Area IDs" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                            <Border BorderBrush="#DDDDDD" BorderThickness="1" CornerRadius="6">
+                                <ScrollViewer Height="50" VerticalScrollBarVisibility="Auto">
+                                    <ItemsControl ItemsSource="{Binding SelectedCreatedSet.AreaIds}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding}" Padding="6,2"/>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </ScrollViewer>
+                            </Border>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1">
+                            <TextBlock Text="Opening IDs" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                            <Border BorderBrush="#DDDDDD" BorderThickness="1" CornerRadius="6">
+                                <ScrollViewer Height="50" VerticalScrollBarVisibility="Auto">
+                                    <ItemsControl ItemsSource="{Binding SelectedCreatedSet.OpeningIds}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding}" Padding="6,2"/>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </ScrollViewer>
+                            </Border>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Plot placeholder (swap this for your custom plot control) -->
+                    <Border Grid.Row="4"
+                    Margin="0,14,0,0"
+                    BorderBrush="#DDDDDD"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Background="#FAFAFA">
+                        <TextBlock Text="(Plot goes here)"
+                           Foreground="Gray"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"/>
+                    </Border>
+                </Grid>
+            </Border>
         </Grid>
 
 

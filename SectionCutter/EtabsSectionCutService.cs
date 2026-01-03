@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Windows;
 using ETABSv1;
 
 namespace SectionCutter
@@ -103,6 +104,7 @@ namespace SectionCutter
             // 8) Generate U positions for the slices (skip exactly at bounds)
             int nCuts = definition.NumberOfCuts;
             var uValues = Linspace(Umin + 1.0, Umax - 1.0, nCuts);
+
 
             // 9) For ETABS table data and in-memory slice models
             var etabsSectionCutData = new List<List<string>>();
@@ -242,8 +244,33 @@ namespace SectionCutter
                         openingIds.Add(areaId);
                 }
 
-                // Save will overwrite the JSON with the latest inputs
-                _jsonStore.Save(definition, openingIds);
+                // Save/Update set in SectionCut.json (list-of-sets), including opening ids
+                var saveResult = _jsonStore.SaveOrUpdateSet(
+                    definition,
+                    openingIds,
+                    updateIfPrefixExists: false); // don't overwrite existing prefix by default
+
+                if (saveResult == SectionCutJsonStore.SaveSetResult.DuplicateSignature)
+                {
+                    // Same start node + same areas + same vector already exists (even if prefix differs)
+                    MessageBox.Show(
+                        "This section cut set already exists (same start node, selected areas, and vector).\n" +
+                        "No new entry was added to SectionCut.json.",
+                        "Duplicate Section Cut Set",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                }
+                else if (saveResult == SectionCutJsonStore.SaveSetResult.DuplicatePrefix)
+                {
+                    // Prefix already exists
+                    MessageBox.Show(
+                        $"A saved set with prefix \"{definition.SectionCutPrefix}\" already exists.\n" +
+                        "Choose a different prefix (or allow overwrite if you want that behavior).",
+                        "Duplicate Prefix",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                }
+
             }
 
             // Return the SectionCutSet for MVVM / later plotting
@@ -311,6 +338,11 @@ namespace SectionCutter
                 // Convert to local coordinates
                 var localMyPoint = new MyPoint(globalPointCoords);
                 localMyPoint.glo_to_loc(gcs);
+
+                localMyPoint.X = localMyPoint.LocalCoords[0];
+                localMyPoint.Y = localMyPoint.LocalCoords[1];
+                localMyPoint.Z = localMyPoint.LocalCoords[2];
+
 
                 var localEtabsPoint = new ETABS_Point
                 {

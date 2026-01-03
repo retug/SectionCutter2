@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Media;
 using ETABSv1;
 
 namespace SectionCutter.ViewModels
@@ -18,6 +20,38 @@ namespace SectionCutter.ViewModels
         private bool _canCreate;
         private string _startNodeOutputText = "[Start Node Info Here]";
         private string _areasOutputText = "[Area Info Here]";
+
+
+        public event Action SectionCutsCreated;
+
+        private SavedSectionCutVM _savedSectionCut;
+        public SavedSectionCutVM SavedSectionCut
+        {
+            get => _savedSectionCut;
+            set
+            {
+                if (SetProperty(ref _savedSectionCut, value))
+                {
+                    HasSavedSectionCutData = _savedSectionCut != null;
+                }
+            }
+        }
+
+        public ObservableCollection<string> SectionCutPrefixes { get; } = new();
+
+        private string _selectedPrefix;
+        public string SelectedPrefix
+        {
+            get => _selectedPrefix;
+            set => SetProperty(ref _selectedPrefix, value);
+        }
+
+        private bool _hasSavedSectionCutData;
+        public bool HasSavedSectionCutData
+        {
+            get => _hasSavedSectionCutData;
+            private set => SetProperty(ref _hasSavedSectionCutData, value);
+        }
 
         public SectionCut SectionCut
         {
@@ -109,6 +143,8 @@ namespace SectionCutter.ViewModels
                     "Section Cuts Created",
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
+                // ✅ Tell MainWindow to reload JSON + refresh dropdown + plot
+                SectionCutsCreated?.Invoke();
             }
             catch (Exception ex)
             {
@@ -225,8 +261,28 @@ namespace SectionCutter.ViewModels
             OnPropertyChanged(propertyName);
             return true;
         }
+
     }
 
+
+    public class SavedSectionCutVM
+    {
+        public string SectionCutPrefix { get; set; }
+        public string StartNodeId { get; set; }
+
+        public double XVector { get; set; }
+        public double YVector { get; set; }
+        public string VectorLabel => $"X={XVector:0.###}, Y={YVector:0.###}";
+
+        public ObservableCollection<string> AreaIds { get; } = new();
+        public ObservableCollection<string> OpeningIds { get; } = new();
+
+        // Plot data (local U/V space)
+        public ObservableCollection<PointCollection> AreaPolygons { get; } = new();
+        public ObservableCollection<PointCollection> OpeningPolygons { get; } = new();
+        public ObservableCollection<SectionCutter.SectionCutPreviewControl.Segment> Cuts { get; } = new();
+
+    }
     public class RelayCommand : ICommand
     {
         private readonly Action _execute;
