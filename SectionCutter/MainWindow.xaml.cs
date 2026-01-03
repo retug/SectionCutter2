@@ -16,6 +16,9 @@ namespace SectionCutter
     {
         private cPluginCallback _Plugin;
         private cSapModel _SapModel;
+
+        private SectionCutJsonStore _jsonStore;
+
         public SCViewModel ViewModel { get; set; }
 
         public MainWindow(cSapModel SapModel, cPluginCallback Plugin)
@@ -25,8 +28,11 @@ namespace SectionCutter
             _SapModel = SapModel;
             _Plugin = Plugin;
 
+            // JSON store (reads/writes SectionCut.json next to current ETABS model)
+            _jsonStore = new SectionCutJsonStore(_SapModel);
+
             // Create the ETABS-backed SectionCut service and inject into the ViewModel
-            ISectionCutService service = new EtabsSectionCutService(_SapModel);
+            ISectionCutService service = new EtabsSectionCutService(_SapModel, _jsonStore);
             ViewModel = new SCViewModel(_SapModel, service);
 
             this.DataContext = ViewModel;
@@ -37,7 +43,54 @@ namespace SectionCutter
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            // Any window initialization you need
+            // On load: try to read SectionCut.json and restore the last-used inputs
+            try
+            {
+                if (_jsonStore.TryLoad(out var data) && data != null)
+                {
+                    // Populate the ViewModel SectionCut inputs
+                    ViewModel.SectionCut.StartNodeId = data.StartNodeId;
+                    ViewModel.SectionCut.AreaIds = data.AreaIds ?? new System.Collections.Generic.List<string>();
+                    ViewModel.SectionCut.XVector = data.XVector;
+                    ViewModel.SectionCut.YVector = data.YVector;
+                    ViewModel.SectionCut.SectionCutPrefix = data.SectionCutPrefix;
+
+                    // Friendly text outputs so the user knows it loaded
+                    if (!string.IsNullOrWhiteSpace(data.StartNodeId))
+                        ViewModel.StartNodeOutputText = $"Start Node loaded: \"{data.StartNodeId}\"";
+
+                    int aCount = data.AreaIds?.Count ?? 0;
+                    int oCount = data.OpeningIds?.Count ?? 0;
+                    ViewModel.AreasOutputText = $"Loaded {aCount} area object(s) ({oCount} opening(s) detected).";
+
+                    // Check if section cuts already exist in the model for this prefix
+                    if (!string.IsNullOrWhiteSpace(data.SectionCutPrefix))
+                    {
+                        var existing = _jsonStore.GetExistingSectionCutNamesByPrefix(data.SectionCutPrefix);
+                        if (existing.Count > 0)
+                        {
+                            MessageBox.Show(
+                                $"Found {existing.Count} existing section cut(s) in the ETABS model with prefix \"{data.SectionCutPrefix}\".\n\n" +
+                                $"Example: {existing[0]}",
+                                "Existing Section Cuts Detected",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Information);
+                        }
+                    }
+
+                    // Recompute Create button state
+                    ViewModel.ValidateFields();
+                }
+            }
+            catch (Exception ex)
+            {
+                // Do not crash plugin on load; just notify
+                MessageBox.Show(
+                    $"Failed to load SectionCut.json:\n{ex.Message}",
+                    "Load Warning",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
         }
 
         private void MainWindow_Closed(object sender, EventArgs e)
@@ -92,15 +145,6 @@ namespace SectionCutter
         private void ReviewResults_Click(object sender, RoutedEventArgs e)
         {
             SetSelected("results");
-        }
-
-        private void GetAreas_Click(object sender, RoutedEventArgs e)
-        {
-            // Delegate to the ViewModel
-            ViewModel.GetAreasFromSelection();
-
-            // Update the UI text if not yet bound via XAML
-            AreasOutput.Text = ViewModel.AreasOutputText;
         }
 
         private void DecimalInput_PreviewTextInput(object sender, TextCompositionEventArgs e)

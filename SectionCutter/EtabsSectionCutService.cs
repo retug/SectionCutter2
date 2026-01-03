@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Windows.Shapes;
 using ETABSv1;
 
 namespace SectionCutter
@@ -14,14 +13,17 @@ namespace SectionCutter
     /// - Builds section cut quads
     /// - Writes the "Section Cut Definitions" ETABS table
     /// - Returns a SectionCutSet + SectionCutSlice list
+    /// - Writes/updates SectionCut.json next to the ETABS model (optional)
     /// </summary>
     public class EtabsSectionCutService : ISectionCutService
     {
         private readonly cSapModel _sapModel;
+        private readonly SectionCutJsonStore _jsonStore; // optional
 
-        public EtabsSectionCutService(cSapModel sapModel)
+        public EtabsSectionCutService(cSapModel sapModel, SectionCutJsonStore jsonStore = null)
         {
             _sapModel = sapModel ?? throw new ArgumentNullException(nameof(sapModel));
+            _jsonStore = jsonStore; // can be null if you don't want persistence
         }
 
         public SectionCutSet CreateEtabsSectionCuts(SectionCut definition)
@@ -62,9 +64,9 @@ namespace SectionCutter
             var gcs = new GlobalCoordinateSystem(refPointList, vector);
 
             // 4) Build polygon geometry for all selected areas
-            var etabsAreaPointsLocal = new List<ETABS_Point>(); // all local points (for U/V bounds)
-            var areaLineListLocal = new List<List<Line>>();  // lines in local coords
-            var areaLineListGlobal = new List<List<Line>>();  // lines in global (if needed)
+            var etabsAreaPointsLocal = new List<ETABS_Point>();      // all local points (for U/V bounds)
+            var areaLineListLocal = new List<List<Line>>();          // lines in local coords
+            var areaLineListGlobal = new List<List<Line>>();         // lines in global (if needed)
 
             foreach (var areaId in definition.AreaIds)
             {
@@ -94,8 +96,7 @@ namespace SectionCutter
             }
             else
             {
-                // original code: angle = Math.Atan(vectorX / vectorY) * 180 * Math.PI;
-                // but that has a bug (should divide by PI not multiply). We'll use Atan2 instead:
+                // Use Atan2 (correct) instead of Atan(x/y)*180*pi (incorrect)
                 angleDeg = Math.Atan2(definition.XVector, definition.YVector) * 180.0 / Math.PI;
             }
 
@@ -225,6 +226,24 @@ namespace SectionCutter
             if (etabsSectionCutData.Count > 0)
             {
                 WriteSectionCutTableToEtabs(etabsSectionCutData);
+            }
+
+            // 11) Save inputs to SectionCut.json (next to the ETABS model), including opening ids
+            //     Opening IDs are those area objects for which AreaObj.GetOpening(...) == true.
+            if (_jsonStore != null)
+            {
+                var openingIds = new List<string>();
+
+                foreach (var areaId in definition.AreaIds ?? new List<string>())
+                {
+                    bool isOpening = false;
+                    int r2 = _sapModel.AreaObj.GetOpening(areaId, ref isOpening);
+                    if (r2 == 0 && isOpening)
+                        openingIds.Add(areaId);
+                }
+
+                // Save will overwrite the JSON with the latest inputs
+                _jsonStore.Save(definition, openingIds);
             }
 
             // Return the SectionCutSet for MVVM / later plotting
@@ -361,7 +380,7 @@ namespace SectionCutter
         {
             string tableKey = "Section Cut Definitions";
 
-            // Field names as in your original code
+            // Field names
             string[] fieldKeys = new string[]
             {
                 "Name", "DefinedBy", "Group", "ResultType", "ResultLoc",

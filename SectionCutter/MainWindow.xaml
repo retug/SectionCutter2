@@ -145,12 +145,12 @@
                             <!-- Get Areas -->
                             <StackPanel Grid.Column="1">
                                 <Button Content="Get Areas"
-                                Style="{StaticResource HoverAccentButton}"
-                                Click="GetAreas_Click"
-                                Height="35"
-                                Margin="5"/>
+                                    Style="{StaticResource HoverAccentButton}"
+                                    Command="{Binding GetAreasCommand}"
+                                    Height="35"
+                                    Margin="5"/>
                                 <TextBlock x:Name="AreasOutput"
-                                   Text="[Area Info Here]"
+                                   Text="{Binding AreasOutputText}"
                                    Foreground="Gray"
                                    Margin="5,0,0,0"/>
                             </StackPanel>
@@ -247,7 +247,7 @@
                         </StackPanel>
                     </Border>
 
-                    <TextBlock Text="Section Cut Prefix"
+                    <TextBlock Text="Sections Cut Prefix"
                        FontWeight="Bold"
                        FontSize="14"
                        Background="White"

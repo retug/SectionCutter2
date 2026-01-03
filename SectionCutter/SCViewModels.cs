@@ -54,6 +54,7 @@ namespace SectionCutter.ViewModels
 
         public ICommand CreateCommand { get; }
         public ICommand GetStartNodeCommand { get; }
+        public ICommand GetAreasCommand { get; }
 
         public SCViewModel(cSapModel sapModel, ISectionCutService sectionCutService)
         {
@@ -71,6 +72,7 @@ namespace SectionCutter.ViewModels
 
             CreateCommand = new RelayCommand(Create, () => CanCreate);
             GetStartNodeCommand = new RelayCommand(ExecuteGetStartNode, () => true);
+            GetAreasCommand = new RelayCommand(ExecuteGetAreas, () => true);
 
             ValidateFields();
         }
@@ -149,10 +151,10 @@ namespace SectionCutter.ViewModels
         }
 
         /// <summary>
-        /// Called from the MainWindow's GetAreas_Click handler.
-        /// Uses the current ETABS selection to collect area objects.
+        /// Uses the current ETABS selection to collect area objects (floors/openings).
+        /// Mirrors the behavior of your original getSelAreas_Click but lives in the VM.
         /// </summary>
-        public void GetAreasFromSelection()
+        private void ExecuteGetAreas()
         {
             int numberItems = 0;
             int[] objectType = null;
@@ -167,13 +169,31 @@ namespace SectionCutter.ViewModels
             }
 
             var areaIds = new List<string>();
+            int openings = 0;
+            int areasSelected = 0;
 
             for (int i = 0; i < numberItems; i++)
             {
-                // ETABS object type 5 = area object
+                // ETABS object type 5 = area object (slab, wall, opening)
                 if (objectType[i] == 5)
                 {
-                    areaIds.Add(objectName[i]);
+                    string areaName = objectName[i];
+
+                    bool isOpening = false;
+                    _sapModel.AreaObj.GetOpening(areaName, ref isOpening);
+
+                    if (isOpening)
+                    {
+                        openings += 1;
+                    }
+                    else
+                    {
+                        areasSelected += 1;
+                    }
+
+                    // Store all area IDs (including openings) for now.
+                    // You can later filter if needed in the service.
+                    areaIds.Add(areaName);
                 }
             }
 
@@ -184,7 +204,9 @@ namespace SectionCutter.ViewModels
             }
 
             SectionCut.AreaIds = areaIds;
-            AreasOutputText = $"Selected {areaIds.Count} area(s): {string.Join(", ", areaIds)}";
+
+            AreasOutputText =
+                $"Selected {areasSelected} area(s), {openings} opening(s).";
 
             ValidateFields();
         }
