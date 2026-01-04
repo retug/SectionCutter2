@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Security.AccessControl;
 using ETABSv1;
 using SectionCutter.ViewModels;
 
@@ -56,7 +57,12 @@ namespace SectionCutter
 
             // 1) Make sure output is selected (ETABS requirement)
             _sapModel.Results.Setup.DeselectAllCasesAndCombosForOutput();
-            _sapModel.Results.Setup.SetCaseSelectedForOutput(loadCaseName);
+            // 2) Select the one case for *table display*
+            string[] loadCases = new[] { loadCaseName };
+            int testforSet = _sapModel.DatabaseTables.SetLoadCasesSelectedForDisplay(ref loadCases);
+
+            string[] combos = new[] { "" };
+            _sapModel.DatabaseTables.SetLoadCombinationsSelectedForDisplay(ref combos);
 
             // 2) Pull the "Section Cut Forces - Analysis" table
             const string tableKey = "Section Cut Forces - Analysis";
