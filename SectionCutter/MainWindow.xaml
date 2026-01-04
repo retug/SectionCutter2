@@ -538,11 +538,252 @@
         </Grid>
 
 
-        <!-- Review Results Content test -->
+        <!-- Review Results Content -->
         <Grid Grid.Column="2" Name="ReviewResultsGrid" Background="White" Visibility="Collapsed">
-            <TextBlock Text="Review Results"
-                       HorizontalAlignment="Center" VerticalAlignment="Center"
-                       FontSize="20" Foreground="Black"/>
+
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <!-- Header -->
+                <RowDefinition Height="1*"/>
+                <!-- Select Results -->
+                <RowDefinition Height="3*"/>
+                <!-- Plot 1 -->
+                <RowDefinition Height="3*"/>
+                <!-- Plot 2 -->
+                <RowDefinition Height="2*"/>
+                <!-- DataGrid -->
+            </Grid.RowDefinitions>
+
+            <!-- ===================== Header ===================== -->
+            <StackPanel Grid.Row="0" Margin="10,10,10,0">
+                <TextBlock Text="Section Cut Results"
+                   FontSize="22"
+                   FontWeight="Bold"
+                   Foreground="Black"
+                   Margin="0,0,0,8"/>
+                <Border Height="1" Background="#DDDDDD"/>
+            </StackPanel>
+
+            <!-- ===================== Select Results (1*) ===================== -->
+            <Grid Grid.Row="1" Margin="10,10,10,10">
+                <Border BorderBrush="#DDDDDD"
+                BorderThickness="1"
+                CornerRadius="8"
+                Background="White"
+                Padding="12">
+
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Text="Select Results"
+                           FontSize="14"
+                           FontWeight="SemiBold"
+                           Margin="0,0,0,10"/>
+
+                        <Grid Grid.Row="1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Section Cut Prefix -->
+                            <StackPanel Grid.Column="0" Margin="0,0,10,0">
+                                <TextBlock Text="Section Cut Prefix" FontWeight="Bold" Margin="2,0,0,6"/>
+                                <ComboBox x:Name="ResultsPrefixCombo"
+                                  Height="32"
+                                  ItemsSource="{Binding ResultsPrefixes}"
+                                  SelectedItem="{Binding SelectedResultsPrefix, Mode=TwoWay}"/>
+                            </StackPanel>
+
+                            <!-- Load Case -->
+                            <StackPanel Grid.Column="1" Margin="10,0,0,0">
+                                <TextBlock Text="Load Case" FontWeight="Bold" Margin="2,0,0,6"/>
+                                <ComboBox x:Name="ResultsLoadCaseCombo"
+                                  Height="32"
+                                  ItemsSource="{Binding LoadCases}"
+                                  SelectedItem="{Binding SelectedLoadCase, Mode=TwoWay}"
+                                  DisplayMemberPath="Name">
+
+                                    <!-- Green if HasResults == true (WinForms-style visual cue) -->
+                                    <ComboBox.ItemContainerStyle>
+                                        <Style TargetType="ComboBoxItem">
+                                            <Setter Property="Foreground" Value="Black"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding HasResults}" Value="True">
+                                                    <Setter Property="Foreground" Value="#FF2E8B57"/>
+                                                    <Setter Property="FontWeight" Value="SemiBold"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </ComboBox.ItemContainerStyle>
+                                </ComboBox>
+                            </StackPanel>
+                        </Grid>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <!-- ===================== Plot 1 (3*) ===================== -->
+            <Grid Grid.Row="2" Margin="10,0,10,10">
+                <Border BorderBrush="#DDDDDD"
+                BorderThickness="1"
+                CornerRadius="8"
+                Background="White"
+                Padding="12">
+
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Plot header row -->
+                        <Grid Grid.Row="0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="220"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Text="Results Plot 1"
+                               FontSize="14"
+                               FontWeight="SemiBold"
+                               VerticalAlignment="Center"/>
+
+                            <ComboBox Grid.Column="1"
+                              x:Name="Plot1ComponentCombo"
+                              Height="28"
+                              SelectedIndex="0"
+                              Margin="0,0,0,0"
+                              SelectionChanged="PlotComponent_SelectionChanged">
+                                <ComboBoxItem Content="Shear"/>
+                                <ComboBoxItem Content="Moment"/>
+                                <ComboBoxItem Content="Axial"/>
+                            </ComboBox>
+                        </Grid>
+
+                        <!-- Plot region -->
+                        <Border Grid.Row="1"
+                        Margin="0,10,0,0"
+                        BorderBrush="#EEEEEE"
+                        BorderThickness="1"
+                        CornerRadius="6"
+                        Background="White">
+
+                            <!-- Step 4: this control will be created (pan/zoom/hover/results) -->
+                            <local:SectionCutResultsPlotControl
+                                x:Name="ResultsPlot1"
+                                PlotBackground="#FAFAFA"
+                                Areas="{Binding ResultsAreaPolygons}"
+                                Openings="{Binding ResultsOpeningPolygons}"
+                                Cuts="{Binding ResultsPlot1Cuts}" />
+                        </Border>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <!-- ===================== Plot 2 (3*) ===================== -->
+            <Grid Grid.Row="3" Margin="10,0,10,10">
+                <Border BorderBrush="#DDDDDD"
+                BorderThickness="1"
+                CornerRadius="8"
+                Background="White"
+                Padding="12">
+
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Plot header row -->
+                        <Grid Grid.Row="0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="220"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Text="Results Plot 2"
+                               FontSize="14"
+                               FontWeight="SemiBold"
+                               VerticalAlignment="Center"/>
+
+                            <ComboBox Grid.Column="1"
+                              x:Name="Plot2ComponentCombo"
+                              Height="28"
+                              SelectedIndex="1"
+                              SelectionChanged="PlotComponent_SelectionChanged">
+                                <ComboBoxItem Content="Shear"/>
+                                <ComboBoxItem Content="Moment"/>
+                                <ComboBoxItem Content="Axial"/>
+                            </ComboBox>
+                        </Grid>
+
+                        <!-- Plot region -->
+                        <Border Grid.Row="1"
+                        Margin="0,10,0,0"
+                        BorderBrush="#EEEEEE"
+                        BorderThickness="1"
+                        CornerRadius="6"
+                        Background="White">
+
+                            <!-- Step 4: this control will be created (pan/zoom/hover/results) -->
+                            <local:SectionCutResultsPlotControl
+                                x:Name="ResultsPlot2"
+                                PlotBackground="#FAFAFA"
+                                Areas="{Binding ResultsAreaPolygons}"
+                                Openings="{Binding ResultsOpeningPolygons}"
+                                Cuts="{Binding ResultsPlot2Cuts}" />
+                        </Border>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <!-- ===================== Results DataGrid (2*) ===================== -->
+            <Grid Grid.Row="4" Margin="10,0,10,10">
+                <Border BorderBrush="#DDDDDD"
+                BorderThickness="1"
+                CornerRadius="8"
+                Background="White"
+                Padding="12">
+
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Text="Tabular Results"
+                           FontSize="14"
+                           FontWeight="SemiBold"
+                           Margin="0,0,0,10"/>
+
+                        <DataGrid Grid.Row="1"
+                          x:Name="ResultsDataGrid"
+                          ItemsSource="{Binding ResultsRows}"
+                          AutoGenerateColumns="False"
+                          CanUserAddRows="False"
+                          IsReadOnly="True"
+                          HeadersVisibility="Column"
+                          GridLinesVisibility="Horizontal"
+                          SelectionMode="Single"
+                          SelectionChanged="ResultsDataGrid_SelectionChanged">
+
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Section Cut" Binding="{Binding Name}" Width="*"/>
+                                <DataGridTextColumn Header="Shear" Binding="{Binding Shear}" Width="120"/>
+                                <DataGridTextColumn Header="Moment" Binding="{Binding Moment}" Width="120"/>
+                                <DataGridTextColumn Header="Axial" Binding="{Binding Axial}" Width="120"/>
+                                <DataGridTextColumn Header="Length" Binding="{Binding Length}" Width="120"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                </Border>
+            </Grid>
+
         </Grid>
+
     </Grid>
 </Window>

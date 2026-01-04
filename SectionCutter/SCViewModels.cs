@@ -90,6 +90,57 @@ namespace SectionCutter.ViewModels
         public ICommand GetStartNodeCommand { get; }
         public ICommand GetAreasCommand { get; }
 
+        // ---------------------------
+        // Review Results bindings
+        // ---------------------------
+
+        // Prefix list for Review Results (separate from Create/Preview SelectedPrefix)
+        public ObservableCollection<string> ResultsPrefixes { get; } = new();
+
+        private string _selectedResultsPrefix;
+        public string SelectedResultsPrefix
+        {
+            get => _selectedResultsPrefix;
+            set => SetProperty(ref _selectedResultsPrefix, value);
+        }
+
+        // Load cases dropdown (with HasResults styling in XAML)
+        public ObservableCollection<LoadCaseItem> LoadCases { get; } = new();
+
+        private LoadCaseItem _selectedLoadCase;
+        public LoadCaseItem SelectedLoadCase
+        {
+            get => _selectedLoadCase;
+            set => SetProperty(ref _selectedLoadCase, value);
+        }
+
+        // DataGrid rows for results
+        public ObservableCollection<SectionCutResultRow> ResultsRows { get; } = new();
+
+        // Geometry for Results plots (bound just like SavedSectionCut plotting)
+        public ObservableCollection<PointCollection> ResultsAreaPolygons { get; } = new();
+        public ObservableCollection<PointCollection> ResultsOpeningPolygons { get; } = new();
+
+        // Cuts for each plot (Plot1 and Plot2 use different "Value")
+        public ObservableCollection<ResultCutPlotItem> ResultsPlot1Cuts { get; } = new();
+        public ObservableCollection<ResultCutPlotItem> ResultsPlot2Cuts { get; } = new();
+
+
+        // Optional plot dropdown selections (nice to keep in VM)
+        private string _plot1Component = "Shear";
+        public string Plot1Component
+        {
+            get => _plot1Component;
+            set => SetProperty(ref _plot1Component, value);
+        }
+
+        private string _plot2Component = "Moment";
+        public string Plot2Component
+        {
+            get => _plot2Component;
+            set => SetProperty(ref _plot2Component, value);
+        }
+
         public SCViewModel(cSapModel sapModel, ISectionCutService sectionCutService)
         {
             _sapModel = sapModel ?? throw new ArgumentNullException(nameof(sapModel));
