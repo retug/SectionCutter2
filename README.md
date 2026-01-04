@@ -120,11 +120,11 @@ The table and plots are designed to work together — numbers for precision, graph
 
 ### Visual Section Cut Review
 
-![Section Cut Creation and Results Plot](docs/sectioncut_workflow.gif)
+![Section Cut Creation and Results Plot](SectionCutter/docs/sectioncut_workflow.gif)
 
 Created Section Cuts
 
-![Section Cut Creation and Results Plot](docs/sectioncuts_created.png)
+![Section Cut Creation and Results Plot](SectionCutter/docs/sectioncuts_created.png)
 
 This example demonstrates:
 - Selecting diaphragm areas
@@ -136,7 +136,7 @@ This example demonstrates:
 
 ### Iterative Force Path Exploration
 
-![Iterative Results Review](docs/sectioncut_iteration.gif)
+![Iterative Results Review](SectionCutter/docs/sectioncut_iteration.gif)
 
 This example demonstrates:
 - Adjusting section cut spacing or direction
