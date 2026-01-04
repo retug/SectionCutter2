@@ -24,7 +24,7 @@ namespace SectionCutter
         public EtabsSectionCutService(cSapModel sapModel, SectionCutJsonStore jsonStore = null)
         {
             _sapModel = sapModel ?? throw new ArgumentNullException(nameof(sapModel));
-            _jsonStore = jsonStore; // can be null if you don't want persistence
+            _jsonStore = jsonStore ?? throw new ArgumentNullException(nameof(jsonStore));
         }
 
         public SectionCutSet CreateEtabsSectionCuts(SectionCut definition)
@@ -110,6 +110,9 @@ namespace SectionCutter
             var etabsSectionCutData = new List<List<string>>();
             var slices = new List<SectionCutSlice>();
 
+            // NEW: collect global XY cut endpoints for JSON plotting
+            var cutSegmentsXY = new List<SectionCutCutSegmentXY>();
+
             int counter = 0;
 
             foreach (double u in uValues)
@@ -150,6 +153,16 @@ namespace SectionCutter
                     : definition.SectionCutPrefix;
 
                 string name = $"{namePrefix}{counter.ToString().PadLeft(4, '0')}";
+
+                // NEW: store global XY segment endpoints for plotting later
+                cutSegmentsXY.Add(new SectionCutCutSegmentXY
+                {
+                    Name = name,
+                    X1 = p0.X,
+                    Y1 = p0.Y,
+                    X2 = p1.X,
+                    Y2 = p1.Y
+                });
 
                 // Build ETABS table records (4 rows per section cut)
                 var row1 = new List<string>
@@ -244,22 +257,20 @@ namespace SectionCutter
                         openingIds.Add(areaId);
                 }
 
-                // Save/Update set in SectionCut.json (list-of-sets), including opening ids
-                var saveResult = _jsonStore.SaveOrUpdateSet(
-                    definition,
-                    openingIds,
-                    updateIfPrefixExists: false); // don't overwrite existing prefix by default
+                // NEW: persist the set including cut XY endpoints
+                var saveResult = _jsonStore.SaveOrUpdateSet(definition, openingIds, cutSegmentsXY, updateIfPrefixExists: true);
 
                 if (saveResult == SectionCutJsonStore.SaveSetResult.DuplicateSignature)
                 {
-                    // Same start node + same areas + same vector already exists (even if prefix differs)
                     MessageBox.Show(
-                        "This section cut set already exists (same start node, selected areas, and vector).\n" +
-                        "No new entry was added to SectionCut.json.",
-                        "Duplicate Section Cut Set",
+                        "This section cut set already exists (same start node, areas, and vector).\n" +
+                        "Cuts were created in ETABS, but the JSON set was not duplicated.",
+                        "Duplicate Set",
                         MessageBoxButton.OK,
                         MessageBoxImage.Warning);
                 }
+
+
                 else if (saveResult == SectionCutJsonStore.SaveSetResult.DuplicatePrefix)
                 {
                     // Prefix already exists

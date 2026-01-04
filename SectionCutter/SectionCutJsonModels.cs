@@ -22,6 +22,8 @@ namespace SectionCutter
     ///
     /// Backward compatibility:
     /// - If an older "single object" JSON file is found, it is automatically migrated into the new list format.
+    /// NEW: each saved set can now store the global XY cut endpoints directly for plotting:
+    /// - CutSegmentsXY: list of (Name, X1,Y1,X2,Y2)
     /// </summary>
     public class SectionCutJsonStore
     {
@@ -33,13 +35,8 @@ namespace SectionCutter
             _sapModel = sapModel ?? throw new ArgumentNullException(nameof(sapModel));
         }
 
-        // -----------------------------
-        // File path helpers
-        // -----------------------------
-
         public string GetJsonPathForCurrentModel()
         {
-            // ETABS API: GetModelFilename(true) returns full path (if model has been saved).
             var modelPath = _sapModel.GetModelFilename(true);
             if (string.IsNullOrWhiteSpace(modelPath))
                 return null;
@@ -52,13 +49,9 @@ namespace SectionCutter
         }
 
         // -----------------------------
-        // Public Load APIs
+        // Load
         // -----------------------------
 
-        /// <summary>
-        /// Loads the entire JSON root (list of sets). Returns false if not found or invalid.
-        /// If a legacy single-object JSON is found, it will be migrated into the list format.
-        /// </summary>
         public bool TryLoadRoot(out SectionCutJsonRoot root)
         {
             root = null;
@@ -73,13 +66,12 @@ namespace SectionCutter
                 if (string.IsNullOrWhiteSpace(json))
                     return false;
 
-                // Try new format first
+                // New list format
                 try
                 {
                     var parsedRoot = JsonSerializer.Deserialize<SectionCutJsonRoot>(json, JsonOptions());
                     if (parsedRoot?.Sets != null)
                     {
-                        // Clean null entries if any
                         parsedRoot.Sets = parsedRoot.Sets.Where(s => s != null).ToList();
                         root = parsedRoot;
                         return true;
@@ -90,7 +82,7 @@ namespace SectionCutter
                     // ignore, try legacy
                 }
 
-                // Try legacy single-object format and migrate
+                // Legacy single-object format migration
                 try
                 {
                     var legacy = JsonSerializer.Deserialize<SectionCutJsonData>(json, JsonOptions());
@@ -101,7 +93,7 @@ namespace SectionCutter
                             Sets = new List<SectionCutJsonData> { legacy }
                         };
 
-                        SaveRoot(migrated); // migrate in place
+                        SaveRoot(migrated);
                         root = migrated;
                         return true;
                     }
@@ -115,15 +107,11 @@ namespace SectionCutter
             }
             catch
             {
-                // If json is malformed, don't crash the plugin.
                 root = null;
                 return false;
             }
         }
 
-        /// <summary>
-        /// Loads a saved set by prefix. Returns false if not found or if the json file is missing/invalid.
-        /// </summary>
         public bool TryLoadByPrefix(string prefix, out SectionCutJsonData set)
         {
             set = null;
@@ -134,15 +122,11 @@ namespace SectionCutter
             if (!TryLoadRoot(out var root) || root?.Sets == null)
                 return false;
 
-            set = root.Sets.FirstOrDefault(s =>
-                s != null && string.Equals(s.SectionCutPrefix, prefix, StringComparison.OrdinalIgnoreCase));
+            set = root.Sets.FirstOrDefault(s =>s != null && string.Equals(s.SectionCutPrefix, prefix, StringComparison.OrdinalIgnoreCase));
 
             return set != null;
         }
 
-        /// <summary>
-        /// Returns all saved prefixes (distinct, sorted). Empty list if no file/invalid file.
-        /// </summary>
         public List<string> GetAllPrefixes()
         {
             if (!TryLoadRoot(out var root) || root?.Sets == null)
@@ -157,12 +141,9 @@ namespace SectionCutter
         }
 
         // -----------------------------
-        // Public Save APIs
+        // Save
         // -----------------------------
 
-        /// <summary>
-        /// Save/Update behavior outcome.
-        /// </summary>
         public enum SaveSetResult
         {
             Added,
@@ -172,22 +153,18 @@ namespace SectionCutter
         }
 
         /// <summary>
-        /// Adds a new set or updates an existing one (by prefix).
-        ///
-        /// Duplicate detection:
-        /// - DuplicateSignature: same StartNodeId + same AreaIds (order-independent) + same vector (rounded tolerance).
-        ///   This is flagged even if the prefix is different.
-        /// - DuplicatePrefix: prefix already exists and updateIfPrefixExists == false.
-        ///
-        /// Caller can decide whether to allow overwriting by prefix.
+        /// Saves a set. NEW: accepts cutSegmentsXY (global XY endpoints) for plotting later.
         /// </summary>
-        public SaveSetResult SaveOrUpdateSet(SectionCut definition, IEnumerable<string> openingIds, bool updateIfPrefixExists)
+        public SaveSetResult SaveOrUpdateSet(
+            SectionCut definition,
+            IEnumerable<string> openingIds,
+            IEnumerable<SectionCutCutSegmentXY> cutSegmentsXY,
+            bool updateIfPrefixExists)
         {
             if (definition == null) throw new ArgumentNullException(nameof(definition));
             if (string.IsNullOrWhiteSpace(definition.SectionCutPrefix))
                 throw new ArgumentException("SectionCutPrefix is required.", nameof(definition));
 
-            // Build the new set payload
             var newSet = new SectionCutJsonData
             {
                 StartNodeId = definition.StartNodeId,
@@ -196,7 +173,8 @@ namespace SectionCutter
                 XVector = definition.XVector,
                 YVector = definition.YVector,
                 SectionCutPrefix = definition.SectionCutPrefix,
-                SavedUtc = DateTime.UtcNow
+                SavedUtc = DateTime.UtcNow,
+                CutSegmentsXY = (cutSegmentsXY ?? Array.Empty<SectionCutCutSegmentXY>()).ToList()
             };
 
             var path = GetJsonPathForCurrentModel();
@@ -204,21 +182,18 @@ namespace SectionCutter
                 throw new InvalidOperationException(
                     "ETABS model does not have a valid file path. Save the ETABS model first so SectionCut.json can be written next to it.");
 
-            // Load existing or create new root
             if (!TryLoadRoot(out var root) || root == null)
                 root = new SectionCutJsonRoot();
 
             root.Sets ??= new List<SectionCutJsonData>();
 
-            // Normalize comparisons
+            // Duplicate signature (start node + areas + vector)
             var newSig = MakeSignature(newSet);
-
-            // (1) Duplicate signature check (even if prefix differs)
             var sigDup = root.Sets.FirstOrDefault(s => s != null && MakeSignature(s) == newSig);
             if (sigDup != null)
                 return SaveSetResult.DuplicateSignature;
 
-            // (2) Prefix check
+            // Prefix check
             var prefixExisting = root.Sets.FirstOrDefault(s =>
                 s != null && string.Equals(s.SectionCutPrefix, newSet.SectionCutPrefix, StringComparison.OrdinalIgnoreCase));
 
@@ -227,7 +202,6 @@ namespace SectionCutter
                 if (!updateIfPrefixExists)
                     return SaveSetResult.DuplicatePrefix;
 
-                // Update existing set in-place
                 prefixExisting.StartNodeId = newSet.StartNodeId;
                 prefixExisting.AreaIds = newSet.AreaIds ?? new List<string>();
                 prefixExisting.OpeningIds = newSet.OpeningIds ?? new List<string>();
@@ -235,72 +209,17 @@ namespace SectionCutter
                 prefixExisting.YVector = newSet.YVector;
                 prefixExisting.SavedUtc = DateTime.UtcNow;
 
+                // NEW: update cut endpoints too
+                prefixExisting.CutSegmentsXY = newSet.CutSegmentsXY ?? new List<SectionCutCutSegmentXY>();
+
                 SaveRoot(root);
                 return SaveSetResult.Updated;
             }
 
-            // (3) Add new set
             root.Sets.Add(newSet);
             SaveRoot(root);
             return SaveSetResult.Added;
         }
-
-        // -----------------------------
-        // ETABS existence check
-        // -----------------------------
-
-        /// <summary>
-        /// Checks the current ETABS model for any section cut definition names
-        /// that start with the provided prefix.
-        /// </summary>
-        public List<string> GetExistingSectionCutNamesByPrefix(string prefix)
-        {
-            if (string.IsNullOrWhiteSpace(prefix))
-                return new List<string>();
-
-            string tableKey = "Section Cut Definitions";
-            string[] fieldKeyList = null;
-            string groupName = "All";
-            int tableVersion = 1;
-            string[] fieldKeysIncluded = null;
-            int numberRecords = 0;
-            string[] tableData = null;
-
-            int ret = _sapModel.DatabaseTables.GetTableForDisplayArray(
-                tableKey,
-                ref fieldKeyList,
-                groupName,
-                ref tableVersion,
-                ref fieldKeysIncluded,
-                ref numberRecords,
-                ref tableData);
-
-            if (ret != 0 || fieldKeysIncluded == null || tableData == null || numberRecords <= 0)
-                return new List<string>();
-
-            int numFields = fieldKeysIncluded.Length;
-            int nameIndex = Array.FindIndex(fieldKeysIncluded, k => string.Equals(k, "Name", StringComparison.OrdinalIgnoreCase));
-            if (nameIndex < 0)
-                return new List<string>();
-
-            var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-            for (int r = 0; r < numberRecords; r++)
-            {
-                int baseIdx = r * numFields;
-                if (baseIdx + nameIndex >= tableData.Length) break;
-
-                var name = tableData[baseIdx + nameIndex];
-                if (!string.IsNullOrWhiteSpace(name) && name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-                    names.Add(name);
-            }
-
-            return names.OrderBy(x => x, StringComparer.OrdinalIgnoreCase).ToList();
-        }
-
-        // -----------------------------
-        // Internal save helpers
-        // -----------------------------
 
         private void SaveRoot(SectionCutJsonRoot root)
         {
@@ -312,7 +231,6 @@ namespace SectionCutter
             root ??= new SectionCutJsonRoot();
             root.Sets ??= new List<SectionCutJsonData>();
 
-            // Remove nulls + de-dupe by prefix (keep most recent if duplicates somehow exist)
             root.Sets = root.Sets
                 .Where(s => s != null && !string.IsNullOrWhiteSpace(s.SectionCutPrefix))
                 .GroupBy(s => s.SectionCutPrefix.Trim(), StringComparer.OrdinalIgnoreCase)
@@ -327,14 +245,11 @@ namespace SectionCutter
         {
             string start = (s.StartNodeId ?? "").Trim();
 
-            // Signature is based on AreaIds only (openings are derived from selection and can vary).
-            // If you want openings to be part of the uniqueness test, include them here as well.
             var areas = (s.AreaIds ?? new List<string>())
                 .Select(x => (x ?? "").Trim())
                 .Where(x => x.Length > 0)
                 .OrderBy(x => x, StringComparer.OrdinalIgnoreCase);
 
-            // round vectors to avoid tiny float diffs
             double vx = Math.Round(s.XVector, 6);
             double vy = Math.Round(s.YVector, 6);
 
@@ -351,17 +266,11 @@ namespace SectionCutter
         }
     }
 
-    /// <summary>
-    /// JSON root payload. Stores a list of saved sets.
-    /// </summary>
     public class SectionCutJsonRoot
     {
         public List<SectionCutJsonData> Sets { get; set; } = new List<SectionCutJsonData>();
     }
 
-    /// <summary>
-    /// JSON payload that stores the inputs used to create section cuts.
-    /// </summary>
     public class SectionCutJsonData
     {
         public string StartNodeId { get; set; }
@@ -371,5 +280,21 @@ namespace SectionCutter
         public double YVector { get; set; }
         public string SectionCutPrefix { get; set; }
         public DateTime SavedUtc { get; set; }
+
+        // NEW: stored global XY endpoints of each cut for plotting after load
+        public List<SectionCutCutSegmentXY> CutSegmentsXY { get; set; } = new List<SectionCutCutSegmentXY>();
+    }
+
+    /// <summary>
+    /// Stored global XY cut endpoints (for plotting).
+    /// Name is optional but helps with debugging and display.
+    /// </summary>
+    public class SectionCutCutSegmentXY
+    {
+        public string Name { get; set; }  // e.g. "L1X-0003"
+        public double X1 { get; set; }
+        public double Y1 { get; set; }
+        public double X2 { get; set; }
+        public double Y2 { get; set; }
     }
 }

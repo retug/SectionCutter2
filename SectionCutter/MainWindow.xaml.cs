@@ -163,7 +163,22 @@ namespace SectionCutter
 
             // Build plot geometry from ETABS (GLOBAL X/Y)
             BuildXYPolygonsFromEtabs(data, vm);
-            BuildCutSegmentsXYFromEtabs(data.SectionCutPrefix, vm);
+
+            if (data.CutSegmentsXY != null && data.CutSegmentsXY.Count > 0)
+            {
+                foreach (var seg in data.CutSegmentsXY)
+                {
+                    vm.Cuts.Add(new SectionCutPreviewControl.Segment(
+                        new System.Windows.Point(seg.X1, seg.Y1),
+                        new System.Windows.Point(seg.X2, seg.Y2)));
+                }
+            }
+            else
+            {
+                // fallback for older JSON files
+                BuildCutSegmentsXYFromEtabs(prefixToUse, vm);
+            }
+
 
             // Push into VM (triggers UI updates)
             ViewModel.SavedSectionCut = vm;

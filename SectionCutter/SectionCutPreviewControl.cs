@@ -127,15 +127,19 @@ namespace SectionCutter
         {
             base.OnRender(dc);
 
+            if (!HasAnyData()) return;
+
             // Background
             dc.DrawRectangle(PlotBackground, null, new Rect(0, 0, ActualWidth, ActualHeight));
-
-            // STEP 3 (your request): no data = no draw
-            if (!HasAnyData())
-                return;
-
+            
             // Draw with view transform
             dc.PushTransform(new MatrixTransform(_viewMatrix));
+
+            // ✅ NEW: pixel snapping in device space reduces flicker on zoom
+            var guidelines = new GuidelineSet();
+            guidelines.GuidelinesX.Add(0);
+            guidelines.GuidelinesY.Add(0);
+            dc.PushGuidelineSet(guidelines);
 
             DrawPolygons(dc);
             DrawCuts(dc);
@@ -173,14 +177,31 @@ namespace SectionCutter
 
         private void DrawCuts(DrawingContext dc)
         {
-            if (Cuts == null || Cuts.Count == 0)
-                return;
+            if (Cuts == null || Cuts.Count == 0) return;
 
-            var pen = new Pen(Brushes.Black, 0.03);
+            var orange = (SolidColorBrush)new BrushConverter().ConvertFromString("#ff8c69");
+            orange.Freeze();
+
+            // screen constant thickness (~2 px)
+            double scaleX = Math.Abs(_viewMatrix.M11);
+            if (scaleX < 1e-9) scaleX = 1;
+
+            double thicknessWorld = 2.0 / scaleX;
+
+            var pen = new Pen(orange, thicknessWorld)
+            {
+                StartLineCap = PenLineCap.Round,
+                EndLineCap = PenLineCap.Round,
+                LineJoin = PenLineJoin.Round
+            };
+            pen.Freeze();
 
             foreach (var seg in Cuts)
+            {
                 dc.DrawLine(pen, seg.A, seg.B);
+            }
         }
+
 
         private static Geometry PolyToGeometry(PointCollection poly)
         {
