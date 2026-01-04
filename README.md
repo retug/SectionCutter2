@@ -122,6 +122,10 @@ The table and plots are designed to work together — numbers for precision, graph
 
 ![Section Cut Creation and Results Plot](docs/sectioncut_workflow.gif)
 
+Created Section Cuts
+
+![Section Cut Creation and Results Plot](docs/sectioncuts_created.png)
+
 This example demonstrates:
 - Selecting diaphragm areas
 - Defining section cut spacing
@@ -148,16 +152,6 @@ This example demonstrates:
 - Engineers who prefer visual confirmation of force flow
 - Teams looking to reduce repetitive ETABS setup work
 - Anyone reviewing diaphragm forces beyond raw tables
-
----
-
-## Design Philosophy
-
-SectionCutter2 is built around:
-- **Speed** – minimize setup time and repetitive tasks
-- **Clarity** – emphasize force flow, not just numbers
-- **Repeatability** – consistent results across models
-- **Engineering judgment** – visuals that support decisions, not replace them
 
 ---
 
