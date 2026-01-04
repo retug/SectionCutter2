@@ -542,7 +542,7 @@
         <Grid Grid.Column="2" Name="ReviewResultsGrid" Background="White" Visibility="Collapsed">
 
             <Grid.RowDefinitions>
-                <!-- Header -->f
+                <!-- Header -->
                 <RowDefinition Height="Auto"/>
                 <!-- Select Results -->
                 <RowDefinition Height="Auto"/>
