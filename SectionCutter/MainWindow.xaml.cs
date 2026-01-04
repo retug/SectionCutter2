@@ -294,14 +294,19 @@ namespace SectionCutter
                 var b = new Point(seg.X2, seg.Y2);
                 double dx = b.X - a.X;
                 double dy = b.Y - a.Y;
-                double len = Math.Sqrt(dx * dx + dy * dy);
+                // double len = Math.Sqrt(dx * dx + dy * dy);
+
+                double rawLen = Math.Sqrt(dx * dx + dy * dy);
+                // Cuts are extended ±0.25 in U for full clipping; subtract 0.50 from reported length
+                double userLen = Math.Max(0.0, rawLen - 0.5); // hide ±0.25 extension from user
+
 
                 _cutResultsAll[r.SectionCutName] = new CutResultAll
                 {
                     Name = r.SectionCutName,
                     A = a,
                     B = b,
-                    Length = len,
+                    Length = userLen,
                     Shear = r.F1,
                     Axial = r.F2,
                     Moment = r.M3

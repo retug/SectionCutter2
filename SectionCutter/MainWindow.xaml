@@ -542,16 +542,16 @@
         <Grid Grid.Column="2" Name="ReviewResultsGrid" Background="White" Visibility="Collapsed">
 
             <Grid.RowDefinitions>
+                <!-- Header -->f
                 <RowDefinition Height="Auto"/>
-                <!-- Header -->
-                <RowDefinition Height="1*"/>
                 <!-- Select Results -->
-                <RowDefinition Height="3*"/>
+                <RowDefinition Height="Auto"/>
                 <!-- Plot 1 -->
                 <RowDefinition Height="3*"/>
                 <!-- Plot 2 -->
-                <RowDefinition Height="2*"/>
+                <RowDefinition Height="3*"/>
                 <!-- DataGrid -->
+                <RowDefinition Height="2*"/>
             </Grid.RowDefinitions>
 
             <!-- ===================== Header ===================== -->
