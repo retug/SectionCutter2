@@ -17,9 +17,10 @@ namespace SectionCutter
     public class SectionCutForceRecord
     {
         public string SectionCutName { get; set; }
-        public string LoadCase { get; set; }
-        public double F1 { get; set; } // shear
-        public double F2 { get; set; } // axial
-        public double M3 { get; set; } // moment
+        public string OutputCase { get; set; }
+        public double F1 { get; set; }
+        public double F2 { get; set; }
+        public double F3 { get; set; }
+        public double M3 { get; set; }
     }
 }

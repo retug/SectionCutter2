@@ -246,12 +246,29 @@ namespace SectionCutter
             foreach (var pc in tmpVm.OpeningPolygons)
                 ViewModel.ResultsOpeningPolygons.Add(pc);
 
-            // ---------- 2) Prefer JSON cut segments (these include Name + XY endpoints) ----------
+            // ---------- 2) Prefer JSON cut segments ----------
             var segs = data.CutSegmentsXY ?? new List<SectionCutCutSegmentXY>();
 
             var cutSegByName = segs
                 .Where(s => s != null && !string.IsNullOrWhiteSpace(s.Name))
                 .ToDictionary(s => s.Name, s => s, StringComparer.OrdinalIgnoreCase);
+
+            // TEMP: show cut geometry even if ETABS returns no forces
+            PopulateCutLinesFromSegmentsOnly(cutSegByName);
+
+            // Fallback: rebuild named cut segments from ETABS if JSON doesn’t have them
+            if (cutSegByName.Count == 0)
+            {
+                cutSegByName = BuildNamedCutSegmentsXYFromEtabs(prefix);
+            }
+
+            // If still none, then truly nothing to plot
+            if (cutSegByName.Count == 0)
+            {
+                ViewModel.ResultsRows.Clear();
+                ClearResultsPlots();
+                return;
+            }
 
             if (cutSegByName.Count == 0)
             {
@@ -308,6 +325,31 @@ namespace SectionCutter
             // ---------- 6) Populate plot-bound cut collections ----------
             ApplyResultsToPlots();
         }
+        //TEMP: need to eventually remove.
+        private void PopulateCutLinesFromSegmentsOnly(Dictionary<string, SectionCutCutSegmentXY> cutSegByName)
+        {
+            ViewModel.ResultsPlot1Cuts.Clear();
+            ViewModel.ResultsPlot2Cuts.Clear();
+
+            foreach (var kv in cutSegByName.OrderBy(k => k.Key, StringComparer.OrdinalIgnoreCase))
+            {
+                var seg = kv.Value;
+                var item = new ResultCutPlotItem
+                {
+                    Name = seg.Name,
+                    A = new Point(seg.X1, seg.Y1),
+                    B = new Point(seg.X2, seg.Y2),
+                    Length = Math.Sqrt(Math.Pow(seg.X2 - seg.X1, 2) + Math.Pow(seg.Y2 - seg.Y1, 2)),
+                    Value = 0.0 // no results yet
+                };
+
+                ViewModel.ResultsPlot1Cuts.Add(item);
+                ViewModel.ResultsPlot2Cuts.Add(item);
+            }
+
+            if (ResultsPlot1 != null) ResultsPlot1.FitToContent();
+            if (ResultsPlot2 != null) ResultsPlot2.FitToContent();
+        }
 
         private void ApplyResultsToPlots()
         {
@@ -334,7 +376,7 @@ namespace SectionCutter
                 ResultsPlot1.ValueScale = ComputeValueScale(bounds1, ViewModel.ResultsPlot1Cuts.Select(c => c.Value));
                 ResultsPlot1.FitToContent();
             }
-
+            
             if (ResultsPlot2 != null)
             {
                 var bounds2 = ComputeWorldBounds(ViewModel.ResultsAreaPolygons, ViewModel.ResultsOpeningPolygons, ViewModel.ResultsPlot2Cuts);
@@ -641,6 +683,88 @@ namespace SectionCutter
                     vm.Cuts.Add(new SectionCutPreviewControl.Segment(kv.Value, end));
                 }
             }
+        }
+
+        private Dictionary<string, SectionCutCutSegmentXY> BuildNamedCutSegmentsXYFromEtabs(string prefix)
+        {
+            var dict = new Dictionary<string, SectionCutCutSegmentXY>(StringComparer.OrdinalIgnoreCase);
+
+            if (string.IsNullOrWhiteSpace(prefix))
+                return dict;
+
+            const string tableKey = "Section Cut Definitions";
+
+            string[] fieldKeyList = null;
+            string groupName = "All";
+            int tableVersion = 1;
+            string[] fieldKeysIncluded = null;
+            int numberRecords = 0;
+            string[] tableData = null;
+
+            int ret = _SapModel.DatabaseTables.GetTableForDisplayArray(
+                tableKey,
+                ref fieldKeyList,
+                groupName,
+                ref tableVersion,
+                ref fieldKeysIncluded,
+                ref numberRecords,
+                ref tableData);
+
+            if (ret != 0 || fieldKeysIncluded == null || tableData == null || numberRecords <= 0)
+                return dict;
+
+            int nf = fieldKeysIncluded.Length;
+
+            int idxName = Array.IndexOf(fieldKeysIncluded, "Name");
+            int idxQuadNum = Array.IndexOf(fieldKeysIncluded, "QuadNum");
+            int idxPointNum = Array.IndexOf(fieldKeysIncluded, "PointNum");
+            int idxX = Array.IndexOf(fieldKeysIncluded, "QuadX");
+            int idxY = Array.IndexOf(fieldKeysIncluded, "QuadY");
+
+            if (idxName < 0 || idxQuadNum < 0 || idxPointNum < 0 || idxX < 0 || idxY < 0)
+                return dict;
+
+            var p1 = new Dictionary<string, Point>(StringComparer.OrdinalIgnoreCase);
+            var p4 = new Dictionary<string, Point>(StringComparer.OrdinalIgnoreCase);
+
+            for (int r2 = 0; r2 < numberRecords; r2++)
+            {
+                int b = r2 * nf;
+
+                string name = tableData[b + idxName];
+                if (string.IsNullOrWhiteSpace(name) ||
+                    !name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                if (tableData[b + idxQuadNum] != "1")
+                    continue;
+
+                string pointNum = tableData[b + idxPointNum];
+
+                if (!double.TryParse(tableData[b + idxX], out double x)) continue;
+                if (!double.TryParse(tableData[b + idxY], out double y)) continue;
+
+                var pt = new Point(x, y);
+                if (pointNum == "1") p1[name] = pt;
+                if (pointNum == "4") p4[name] = pt;
+            }
+
+            foreach (var kv in p1)
+            {
+                if (p4.TryGetValue(kv.Key, out var end))
+                {
+                    dict[kv.Key] = new SectionCutCutSegmentXY
+                    {
+                        Name = kv.Key,
+                        X1 = kv.Value.X,
+                        Y1 = kv.Value.Y,
+                        X2 = end.X,
+                        Y2 = end.Y
+                    };
+                }
+            }
+
+            return dict;
         }
 
         private void SetSelected(string selected)

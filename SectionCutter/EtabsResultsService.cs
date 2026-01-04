@@ -49,20 +49,23 @@ namespace SectionCutter
 
         public List<SectionCutForceRecord> GetSectionCutForces(string loadCaseName)
         {
-            if (string.IsNullOrWhiteSpace(loadCaseName))
-                return new List<SectionCutForceRecord>();
+            var results = new List<SectionCutForceRecord>();
 
-            // Ensure ETABS outputs this case in the DB table (matches your Form1.cs workflow)
+            if (string.IsNullOrWhiteSpace(loadCaseName))
+                return results;
+
+            // 1) Make sure output is selected (ETABS requirement)
             _sapModel.Results.Setup.DeselectAllCasesAndCombosForOutput();
             _sapModel.Results.Setup.SetCaseSelectedForOutput(loadCaseName);
 
+            // 2) Pull the "Section Cut Forces - Analysis" table
             const string tableKey = "Section Cut Forces - Analysis";
 
             string[] fieldKeyList = null;
             string groupName = "All";
-            int tableVersion = 0;
-            string[] fieldsIncluded = null;
-            int numRecs = 0;
+            int tableVersion = 1; // important: 1 matches WinForms behavior reliably
+            string[] fieldKeysIncluded = null;
+            int numberRecords = 0;
             string[] tableData = null;
 
             int ret = _sapModel.DatabaseTables.GetTableForDisplayArray(
@@ -70,69 +73,91 @@ namespace SectionCutter
                 ref fieldKeyList,
                 groupName,
                 ref tableVersion,
-                ref fieldsIncluded,
-                ref numRecs,
+                ref fieldKeysIncluded,
+                ref numberRecords,
                 ref tableData);
 
-            if (ret != 0 || fieldsIncluded == null || tableData == null || numRecs <= 0)
-                return new List<SectionCutForceRecord>();
+            if (ret != 0 || fieldKeysIncluded == null || tableData == null || numberRecords <= 0)
+                return results;
 
-            int nf = fieldsIncluded.Length;
+            int nf = fieldKeysIncluded.Length;
 
-            int idxCut = FindField(fieldsIncluded, "SectionCut", "Section Cut", "Cut");
-            int idxCase = FindField(fieldsIncluded, "LoadCase", "Load Case", "Case");
-            int idxF1 = FindField(fieldsIncluded, "F1");
-            int idxF2 = FindField(fieldsIncluded, "F2");
-            int idxM3 = FindField(fieldsIncluded, "M3");
+            // Expect 15 fields like you showed, but don’t hard-crash; just require the ones we need.
+            int idxSectionCut = IndexOfField(fieldKeysIncluded, "SectionCut");
+            int idxOutputCase = IndexOfField(fieldKeysIncluded, "OutputCase");
+            int idxF1 = IndexOfField(fieldKeysIncluded, "F1");
+            int idxF2 = IndexOfField(fieldKeysIncluded, "F2");
+            int idxF3 = IndexOfField(fieldKeysIncluded, "F3");
+            int idxM3 = IndexOfField(fieldKeysIncluded, "M3");
 
-            if (idxCut < 0 || idxCase < 0 || idxF1 < 0 || idxF2 < 0 || idxM3 < 0)
-                return new List<SectionCutForceRecord>();
-
-            var results = new List<SectionCutForceRecord>();
-
-            for (int r2 = 0; r2 < numRecs; r2++)
+            if (idxSectionCut < 0 || idxOutputCase < 0 || idxF1 < 0 || idxF2 < 0 || idxF3 < 0 || idxM3 < 0)
             {
-                int b = r2 * nf;
-                if (b + nf > tableData.Length) break;
+                // In case ETABS changes headers; surface what's actually in this table.
+                throw new Exception(
+                    "Required fields not found in ETABS table.\n" +
+                    $"Fields:\n - {string.Join("\n - ", fieldKeysIncluded)}");
+            }
 
-                string caseName = tableData[b + idxCase] ?? "";
-                if (!caseName.Equals(loadCaseName, StringComparison.OrdinalIgnoreCase))
+            // 3) Walk records in blocks of nf and filter by OutputCase == loadCaseName
+            // numberRecords is the number of rows; tableData length should be numberRecords * nf
+            for (int r = 0; r < numberRecords; r++)
+            {
+                int baseIdx = r * nf;
+
+                string outputCase = tableData[baseIdx + idxOutputCase];
+
+                if (!string.Equals(outputCase, loadCaseName, StringComparison.OrdinalIgnoreCase))
                     continue;
 
-                var rec = new SectionCutForceRecord
-                {
-                    SectionCutName = tableData[b + idxCut],
-                    LoadCase = caseName,
-                    F1 = ParseDouble(tableData[b + idxF1]),
-                    F2 = ParseDouble(tableData[b + idxF2]),
-                    M3 = ParseDouble(tableData[b + idxM3])
-                };
+                string cutName = tableData[baseIdx + idxSectionCut];
 
-                results.Add(rec);
+                // If you want to ignore blanks / non-cuts:
+                if (string.IsNullOrWhiteSpace(cutName))
+                    continue;
+
+                double f1 = ParseDouble(tableData[baseIdx + idxF1]);
+                double f2 = ParseDouble(tableData[baseIdx + idxF2]);
+                double f3 = ParseDouble(tableData[baseIdx + idxF3]);
+                double m3 = ParseDouble(tableData[baseIdx + idxM3]);
+
+                results.Add(new SectionCutForceRecord
+                {
+                    SectionCutName = cutName,
+                    OutputCase = outputCase,
+                    F1 = f1,
+                    F2 = f2,
+                    F3 = f3,
+                    M3 = m3
+                });
             }
 
             return results;
         }
 
-        private static int FindField(string[] fields, params string[] options)
+        private static int IndexOfField(string[] fields, string name)
         {
+            if (fields == null) return -1;
             for (int i = 0; i < fields.Length; i++)
             {
-                foreach (var opt in options)
-                {
-                    if (string.Equals(fields[i], opt, StringComparison.OrdinalIgnoreCase))
-                        return i;
-                }
+                if (string.Equals(fields[i]?.Trim(), name, StringComparison.OrdinalIgnoreCase))
+                    return i;
             }
             return -1;
         }
 
         private static double ParseDouble(string s)
         {
-            if (double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out var v))
+            if (string.IsNullOrWhiteSpace(s)) return 0.0;
+
+            // table strings can come back with "" literally or empty
+            s = s.Trim();
+            if (s == "\"\"" || s == "\"") return 0.0;
+
+            if (double.TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out double v))
                 return v;
 
-            if (double.TryParse(s, NumberStyles.Float, CultureInfo.CurrentCulture, out v))
+            // fallback to current culture if ETABS is localized
+            if (double.TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.CurrentCulture, out v))
                 return v;
 
             return 0.0;
