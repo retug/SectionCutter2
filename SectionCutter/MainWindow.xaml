@@ -517,15 +517,22 @@
                         </StackPanel>
                     </Grid>
 
-                    <!-- Plot placeholder (swap this for your custom plot control) -->
-                    <!-- Section Cut Preview Plot -->
-                    <local:SectionCutPreviewControl
-                        Grid.Row="4"
+                    <!-- Plot container (clips panning/zooming to this box) -->
+                    <Border Grid.Row="4"
                         Margin="0,14,0,0"
-                        PlotBackground="#FAFAFA"
-                        Areas="{Binding SavedSectionCut.AreaPolygons}"
-                        Openings="{Binding SavedSectionCut.OpeningPolygons}"
-                        Cuts="{Binding SavedSectionCut.Cuts}" />
+                        BorderBrush="#DDDDDD"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Background="#FAFAFA"
+                        ClipToBounds="True"
+                        SnapsToDevicePixels="True">
+
+                        <local:SectionCutPreviewControl
+                            PlotBackground="#FAFAFA"
+                            Areas="{Binding SavedSectionCut.AreaPolygons}"
+                            Openings="{Binding SavedSectionCut.OpeningPolygons}"
+                            Cuts="{Binding SavedSectionCut.Cuts}" />
+                    </Border>
                 </Grid>
             </Border>
         </Grid>

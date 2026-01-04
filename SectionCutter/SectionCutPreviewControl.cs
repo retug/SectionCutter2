@@ -126,12 +126,15 @@ namespace SectionCutter
         protected override void OnRender(DrawingContext dc)
         {
             base.OnRender(dc);
+            // Clip to this control’s bounds so panning/zooming never draws outside
+            dc.PushClip(new RectangleGeometry(new Rect(0, 0, ActualWidth, ActualHeight)));
 
             if (!HasAnyData()) return;
 
             // Background
             dc.DrawRectangle(PlotBackground, null, new Rect(0, 0, ActualWidth, ActualHeight));
             
+
             // Draw with view transform
             dc.PushTransform(new MatrixTransform(_viewMatrix));
 
