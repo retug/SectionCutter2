@@ -129,6 +129,9 @@ namespace SectionCutter
         private const double BaseStrokePx = 2.0;
         private const double HoverHitPx = 10.0;
 
+        
+
+
         public SectionCutResultsPlotControl()
         {
             Focusable = true;
@@ -209,6 +212,23 @@ namespace SectionCutter
             InvalidateVisual();
         }
 
+        private static Point MidPoint(Point a, Point b)
+        {
+            return new Point((a.X + b.X) * 0.5, (a.Y + b.Y) * 0.5);
+        }
+
+        private static Point ParallelSamplePoint(Point a, Point b, double value, double scale)
+        {
+            Vector dir = b - a;
+            if (dir.Length < 1e-9) return MidPoint(a, b);
+
+            dir.Normalize(); // PARALLEL direction
+
+            Point mid = MidPoint(a, b);
+            return mid + dir * (value * scale);
+        }
+
+
         // ----------------------------
         // Rendering
         // ----------------------------
@@ -265,8 +285,7 @@ namespace SectionCutter
                 }
             }
 
-
-            // Draw cuts + diagrams
+            // Draw cuts (actual section cut lines)
             if (Cuts != null)
             {
                 foreach (var c in Cuts)
@@ -280,34 +299,15 @@ namespace SectionCutter
 
                     var pen = isHover ? hoverPen : isSelected ? selectedPen : cutPen;
 
+                    // physical cut line
                     dc.DrawLine(pen, c.A, c.B);
-
-                    // Diagram line perpendicular at midpoint
-                    var mid = new Point((c.A.X + c.B.X) * 0.5, (c.A.Y + c.B.Y) * 0.5);
-
-                    var dir = new Vector(c.B.X - c.A.X, c.B.Y - c.A.Y);
-                    if (dir.Length < 1e-9) continue;
-                    dir.Normalize();
-
-                    // Perp direction
-                    var perp = new Vector(-dir.Y, dir.X);
-
-                    double diagramLen = c.Value * ValueScale;
-                    var end = mid + perp * diagramLen;
-
-                    dc.DrawLine(diagramLen >= 0 ? diagramPen : diagramPenNeg, mid, end);
-
-                    // Small end cap
-                    double cap = 4.0 * invScale;
-                    var capDir = perp;
-                    if (capDir.Length > 1e-9) capDir.Normalize();
-                    var capPerp = new Vector(-capDir.Y, capDir.X);
-
-                    dc.DrawLine(diagramLen >= 0 ? diagramPen : diagramPenNeg,
-                        end - capPerp * cap,
-                        end + capPerp * cap);
                 }
+
+                // Draw the results curve PARALLEL to the cuts, with shaded area to the 0-line
+                DrawParallelResultsPlot(dc, diagramPen, diagramPenNeg, invScale);
             }
+
+
 
             dc.Pop(); // transform
 
@@ -325,6 +325,85 @@ namespace SectionCutter
             dc.Pop(); // clip
         }
 
+        private void DrawParallelResultsPlot(
+    DrawingContext dc,
+    Pen diagramPenPos,
+    Pen diagramPenNeg,
+    double invScale)
+        {
+            if (Cuts == null || Cuts.Count < 2) return;
+
+            var ordered = OrderCutsForPolyline(Cuts);
+            if (ordered.Count < 2) return;
+
+            var basePts = new List<Point>(ordered.Count);
+            var curvePts = new List<Point>(ordered.Count);
+
+            foreach (var c in ordered)
+            {
+                var mid = MidPoint(c.A, c.B);
+                basePts.Add(mid);
+
+                // PARALLEL offset point (value * scale along cut direction)
+                curvePts.Add(ParallelSamplePoint(c.A, c.B, c.Value, ValueScale));
+            }
+
+            // --- Fill area between 0-line (basePts) and curve (curvePts)
+            var areaGeom = new StreamGeometry();
+            using (var ctx = areaGeom.Open())
+            {
+                ctx.BeginFigure(basePts[0], isFilled: true, isClosed: true);
+
+                // along base from start -> end
+                for (int i = 1; i < basePts.Count; i++)
+                    ctx.LineTo(basePts[i], isStroked: true, isSmoothJoin: false);
+
+                // back along curve from end -> start
+                for (int i = curvePts.Count - 1; i >= 0; i--)
+                    ctx.LineTo(curvePts[i], isStroked: true, isSmoothJoin: false);
+            }
+            areaGeom.Freeze();
+
+            // light fill like your example
+            var fillBrush = new SolidColorBrush(Color.FromArgb(60, 60, 120, 220));
+            dc.DrawGeometry(fillBrush, null, areaGeom);
+
+            // --- Draw the 0-line
+            var zeroGeom = new StreamGeometry();
+            using (var ctx = zeroGeom.Open())
+            {
+                ctx.BeginFigure(basePts[0], isFilled: false, isClosed: false);
+                for (int i = 1; i < basePts.Count; i++)
+                    ctx.LineTo(basePts[i], isStroked: true, isSmoothJoin: false);
+            }
+            zeroGeom.Freeze();
+
+            var zeroPen = new Pen(new SolidColorBrush(Color.FromRgb(160, 160, 160)), 1.5 * invScale);
+            dc.DrawGeometry(null, zeroPen, zeroGeom);
+
+            // --- Draw curve segments (pos vs neg)
+            for (int i = 0; i < curvePts.Count - 1; i++)
+            {
+                var c0 = ordered[i];
+                var c1 = ordered[i + 1];
+
+                // choose color based on average sign between the two
+                double avg = 0.5 * (c0.Value + c1.Value);
+                var pen = avg >= 0 ? diagramPenPos : diagramPenNeg;
+
+                dc.DrawLine(pen, curvePts[i], curvePts[i + 1]);
+            }
+
+            // optional: little nodes on curve
+            double r = 3.0 * invScale;
+            for (int i = 0; i < curvePts.Count; i++)
+            {
+                var pen = ordered[i].Value >= 0 ? diagramPenPos : diagramPenNeg;
+                dc.DrawEllipse(pen.Brush, null, curvePts[i], r, r);
+            }
+        }
+
+
         private static Geometry ToGeometry(PointCollection pts)
         {
             var geo = new StreamGeometry();
@@ -335,6 +414,31 @@ namespace SectionCutter
             }
             geo.Freeze();
             return geo;
+        }
+
+        private static List<ViewModels.ResultCutPlotItem> OrderCutsForPolyline(IEnumerable<ViewModels.ResultCutPlotItem> cuts)
+        {
+            var list = cuts?.Where(c => c != null).ToList() ?? new List<ViewModels.ResultCutPlotItem>();
+            if (list.Count <= 2) return list;
+
+            // Midpoints
+            var mids = list.Select(c => MidPoint(c.A, c.B)).ToList();
+
+            double minX = mids.Min(p => p.X), maxX = mids.Max(p => p.X);
+            double minY = mids.Min(p => p.Y), maxY = mids.Max(p => p.Y);
+
+            Vector axis = (maxX - minX) >= (maxY - minY)
+                ? new Vector(1, 0)   // mostly horizontal
+                : new Vector(0, 1);  // mostly vertical
+
+            // Sort by projection onto chosen axis
+            return list
+                .OrderBy(c =>
+                {
+                    var m = MidPoint(c.A, c.B);
+                    return (m.X * axis.X) + (m.Y * axis.Y);
+                })
+                .ToList();
         }
 
         private void DrawTooltip(DrawingContext dc, string text, Point screenPt)
