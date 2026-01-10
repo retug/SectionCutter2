@@ -174,6 +174,9 @@ namespace SectionCutter
                 YVector = definition.YVector,
                 SectionCutPrefix = definition.SectionCutPrefix,
                 SavedUtc = DateTime.UtcNow,
+                HeightAbove = definition.HeightAbove,
+                HeightBelow = definition.HeightBelow,
+                Units = definition.Units,
                 CutSegmentsXY = (cutSegmentsXY ?? Array.Empty<SectionCutCutSegmentXY>()).ToList()
             };
 
@@ -207,6 +210,9 @@ namespace SectionCutter
                 prefixExisting.OpeningIds = newSet.OpeningIds ?? new List<string>();
                 prefixExisting.XVector = newSet.XVector;
                 prefixExisting.YVector = newSet.YVector;
+                prefixExisting.HeightAbove = newSet.HeightAbove;
+                prefixExisting.HeightBelow = newSet.HeightBelow;
+                prefixExisting.Units = newSet.Units;
                 prefixExisting.SavedUtc = DateTime.UtcNow;
 
                 // NEW: update cut endpoints too
@@ -279,6 +285,10 @@ namespace SectionCutter
         public double XVector { get; set; }
         public double YVector { get; set; }
         public string SectionCutPrefix { get; set; }
+
+        public double HeightAbove { get; set; }
+        public double HeightBelow { get; set; }
+        public string Units { get; set; }
         public DateTime SavedUtc { get; set; }
 
         // NEW: stored global XY endpoints of each cut for plotting after load

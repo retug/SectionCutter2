@@ -20,6 +20,33 @@ namespace SectionCutter.ViewModels
         private bool _canCreate;
         private string _startNodeOutputText = "[Start Node Info Here]";
         private string _areasOutputText = "[Area Info Here]";
+        private string _resultsStartNodeId;
+        public string ResultsStartNodeId
+        {
+            get => _resultsStartNodeId;
+            set => SetProperty(ref _resultsStartNodeId, value);
+        }
+
+        private string _resultsVectorLabel;
+        public string ResultsVectorLabel
+        {
+            get => _resultsVectorLabel;
+            set => SetProperty(ref _resultsVectorLabel, value);
+        }
+
+        private string _resultsHeightLabel;
+        public string ResultsHeightLabel
+        {
+            get => _resultsHeightLabel;
+            set => SetProperty(ref _resultsHeightLabel, value);
+        }
+
+        private string _resultsUnitsLabel;
+        public string ResultsUnitsLabel
+        {
+            get => _resultsUnitsLabel;
+            set => SetProperty(ref _resultsUnitsLabel, value);
+        }
 
 
         public event Action SectionCutsCreated;
@@ -324,6 +351,13 @@ namespace SectionCutter.ViewModels
         public double XVector { get; set; }
         public double YVector { get; set; }
         public string VectorLabel => $"X={XVector:0.###}, Y={YVector:0.###}";
+
+        public double HeightAbove { get; set; }
+        public double HeightBelow { get; set; }
+        public string HeightLabel => $"Above={HeightAbove:0.###}, Below={HeightBelow:0.###}";
+
+        public string Units { get; set; }
+        public string UnitsLabel => string.IsNullOrWhiteSpace(Units) ? "" : Units;
 
         public ObservableCollection<string> AreaIds { get; } = new();
         public ObservableCollection<string> OpeningIds { get; } = new();

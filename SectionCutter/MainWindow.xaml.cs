@@ -109,6 +109,7 @@ namespace SectionCutter
         {
             // Default: clear dropdown + plot (so "no JSON" shows nothing)
             ViewModel.SectionCutPrefixes.Clear();
+
             ViewModel.SelectedPrefix = null;
             ViewModel.SavedSectionCut = null;
 
@@ -164,6 +165,10 @@ namespace SectionCutter
             ViewModel.SectionCut.XVector = data.XVector;
             ViewModel.SectionCut.YVector = data.YVector;
             ViewModel.SectionCut.SectionCutPrefix = data.SectionCutPrefix;
+            ViewModel.SectionCut.HeightAbove = data.HeightAbove;
+            ViewModel.SectionCut.HeightBelow = data.HeightBelow;
+            ViewModel.SectionCut.Units = string.IsNullOrWhiteSpace(data.Units) ? ViewModel.SectionCut.Units : data.Units;
+            SyncUnitCheckBoxesFromUnits(ViewModel.SectionCut.Units);
 
             // Build SavedSectionCut VM for display + plot
             var vm = new SavedSectionCutVM
@@ -171,7 +176,10 @@ namespace SectionCutter
                 SectionCutPrefix = data.SectionCutPrefix,
                 StartNodeId = data.StartNodeId,
                 XVector = data.XVector,
-                YVector = data.YVector
+                YVector = data.YVector,
+                HeightAbove = data.HeightAbove,
+                HeightBelow = data.HeightBelow,
+                Units = data.Units
             };
 
             foreach (var id in data.AreaIds ?? new List<string>())
@@ -216,8 +224,21 @@ namespace SectionCutter
         private void ReloadResultsAndPopulateUI()
         {
             if (ViewModel == null) return;
-            if (string.IsNullOrWhiteSpace(ViewModel.SelectedResultsPrefix)) return;
-            if (ViewModel.SelectedLoadCase == null || string.IsNullOrWhiteSpace(ViewModel.SelectedLoadCase.Name)) return;
+            if (string.IsNullOrWhiteSpace(ViewModel.SelectedResultsPrefix))
+            {
+                ViewModel.ResultsRows.Clear();
+                ClearResultsPlots();
+                ClearResultsMeta();
+                return;
+            }
+
+            if (ViewModel.SelectedLoadCase == null || string.IsNullOrWhiteSpace(ViewModel.SelectedLoadCase.Name))
+            {
+                ViewModel.ResultsRows.Clear();
+                ClearResultsPlots();
+                ClearResultsMeta();
+                return;
+            }
 
             string prefix = ViewModel.SelectedResultsPrefix;
             string loadCase = ViewModel.SelectedLoadCase.Name;
@@ -226,8 +247,16 @@ namespace SectionCutter
             {
                 ViewModel.ResultsRows.Clear();
                 ClearResultsPlots();
+                ClearResultsMeta();   // <-- HERE
                 return;
             }
+
+            // If we got here, we have data, so set meta labels:
+            ViewModel.ResultsStartNodeId = data.StartNodeId;
+            ViewModel.ResultsVectorLabel = $"X={data.XVector:0.###}, Y={data.YVector:0.###}";
+            ViewModel.ResultsHeightLabel = $"Above={data.HeightAbove:0.###}, Below={data.HeightBelow:0.###}";
+            ViewModel.ResultsUnitsLabel = (data.Units ?? "").Trim();
+
 
             // ---------- 1) Build polygons/openings from ETABS once ----------
             var tmpVm = new SavedSectionCutVM();
@@ -267,17 +296,10 @@ namespace SectionCutter
             {
                 ViewModel.ResultsRows.Clear();
                 ClearResultsPlots();
+                ClearResultsMeta();   // <-- ALSO HERE
                 return;
             }
 
-            if (cutSegByName.Count == 0)
-            {
-                // Older JSON fallback: your existing BuildCutSegmentsXYFromEtabs builds segments,
-                // but those segments do not include names, so results can’t be mapped reliably.
-                ViewModel.ResultsRows.Clear();
-                ClearResultsPlots();
-                return;
-            }
 
             // ---------- 3) Pull ETABS forces for this load case ----------
             var recs = _resultsService.GetSectionCutForces(loadCase);
@@ -329,6 +351,14 @@ namespace SectionCutter
 
             // ---------- 6) Populate plot-bound cut collections ----------
             ApplyResultsToPlots();
+        }
+
+        private void ClearResultsMeta()
+        {
+            ViewModel.ResultsStartNodeId = null;
+            ViewModel.ResultsVectorLabel = null;
+            ViewModel.ResultsHeightLabel = null;
+            ViewModel.ResultsUnitsLabel = null;
         }
         //TEMP: need to eventually remove.
         private void PopulateCutLinesFromSegmentsOnly(Dictionary<string, SectionCutCutSegmentXY> cutSegByName)
@@ -556,6 +586,10 @@ namespace SectionCutter
             ViewModel.SectionCut.XVector = data.XVector;
             ViewModel.SectionCut.YVector = data.YVector;
             ViewModel.SectionCut.SectionCutPrefix = data.SectionCutPrefix;
+            ViewModel.SectionCut.HeightAbove = data.HeightAbove;
+            ViewModel.SectionCut.HeightBelow = data.HeightBelow;
+            ViewModel.SectionCut.Units = string.IsNullOrWhiteSpace(data.Units) ? ViewModel.SectionCut.Units : data.Units;
+            SyncUnitCheckBoxesFromUnits(ViewModel.SectionCut.Units);
 
             // Build SavedSectionCut VM for display + plot
             var vm = new SavedSectionCutVM
@@ -563,7 +597,10 @@ namespace SectionCutter
                 SectionCutPrefix = data.SectionCutPrefix,
                 StartNodeId = data.StartNodeId,
                 XVector = data.XVector,
-                YVector = data.YVector
+                YVector = data.YVector,
+                HeightAbove = data.HeightAbove,
+                HeightBelow = data.HeightBelow,
+                Units = data.Units
             };
 
             foreach (var id in data.AreaIds ?? new List<string>())
@@ -582,6 +619,24 @@ namespace SectionCutter
             ViewModel.SavedSectionCut = vm;
 
             ViewModel.ValidateFields();
+        }
+
+        private void SyncUnitCheckBoxesFromUnits(string units)
+        {
+            if (KipFtCheckBox == null || KnMCheckBox == null)
+                return;
+
+            var u = (units ?? "").Trim().ToLowerInvariant();
+            if (u.Contains("kn") && u.Contains("m"))
+            {
+                KnMCheckBox.IsChecked = true;
+                KipFtCheckBox.IsChecked = false;
+            }
+            else
+            {
+                KipFtCheckBox.IsChecked = true;
+                KnMCheckBox.IsChecked = false;
+            }
         }
 
         private void BuildXYPolygonsFromEtabs(SectionCutJsonData data, SectionCutter.ViewModels.SavedSectionCutVM vm)
