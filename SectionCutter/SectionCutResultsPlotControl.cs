@@ -555,8 +555,8 @@ namespace SectionCutter
 
             _lastMouse = e.GetPosition(this);
 
-            // Right mouse pan (matches common CAD-like behavior)
-            if (e.RightButton == MouseButtonState.Pressed)
+            // Left mouse pan
+            if (e.LeftButton == MouseButtonState.Pressed)
             {
                 _isPanning = true;
                 _panStartMouse = _lastMouse;
@@ -568,7 +568,7 @@ namespace SectionCutter
 
         private void OnMouseUp(object sender, MouseButtonEventArgs e)
         {
-            if (_isPanning && e.ChangedButton == MouseButton.Right)
+            if (_isPanning && e.ChangedButton == MouseButton.Left)
             {
                 _isPanning = false;
                 ReleaseMouseCapture();

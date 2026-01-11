@@ -251,11 +251,23 @@ namespace SectionCutter
                 return;
             }
 
+
+            // ✅ IMPORTANT: set ETABS present units to match this prefix BEFORE querying geometry or tables
+            SetEtabsUnitsFromString(data.Units);
+
+            ViewModel.ResultsStartNodeId = data.StartNodeId;
+            ViewModel.ResultsVectorLabel = $"X={data.XVector:0.###}, Y={data.YVector:0.###}";
+            ViewModel.ResultsHeightLabel = $"Above={data.HeightAbove:0.###}, Below={data.HeightBelow:0.###}";
+            ViewModel.ResultsUnitsLabel = (data.Units ?? "").Trim();
+
+
             // If we got here, we have data, so set meta labels:
             ViewModel.ResultsStartNodeId = data.StartNodeId;
             ViewModel.ResultsVectorLabel = $"X={data.XVector:0.###}, Y={data.YVector:0.###}";
             ViewModel.ResultsHeightLabel = $"Above={data.HeightAbove:0.###}, Below={data.HeightBelow:0.###}";
             ViewModel.ResultsUnitsLabel = (data.Units ?? "").Trim();
+
+
 
 
             // ---------- 1) Build polygons/openings from ETABS once ----------
@@ -404,6 +416,34 @@ namespace SectionCutter
 
             if (ResultsPlot1 != null) ResultsPlot1.FitToContent();
             if (ResultsPlot2 != null) ResultsPlot2.FitToContent();
+        }
+
+        private ETABSv1.eUnits GetEtabsUnitsFromString(string units)
+        {
+            if (string.IsNullOrWhiteSpace(units))
+                return ETABSv1.eUnits.kip_ft_F;
+
+            var u = units.Trim().ToLowerInvariant();
+
+            if (u.Contains("kip") && u.Contains("ft"))
+                return ETABSv1.eUnits.kip_ft_F;
+
+            if (u.Contains("kn") && (u.Contains("m") || u.Contains("meter")))
+                return ETABSv1.eUnits.kN_m_C;
+
+            return ETABSv1.eUnits.kip_ft_F;
+        }
+
+        private void SetEtabsUnitsFromString(string units)
+        {
+            try
+            {
+                _SapModel?.SetPresentUnits(GetEtabsUnitsFromString(units));
+            }
+            catch
+            {
+                // swallow – worst case your units remain as-is
+            }
         }
 
         private void ApplyResultsToPlots()
@@ -629,6 +669,9 @@ namespace SectionCutter
                 ViewModel.SavedSectionCut = null;
                 return;
             }
+
+            // ✅ Set ETABS units before fetching area point coords / table coords
+            SetEtabsUnitsFromString(data.Units);
 
             // Restore the input fields to match the selected saved set
             ViewModel.SectionCut.StartNodeId = data.StartNodeId;
