@@ -552,7 +552,8 @@
 
 
         <!-- Review Results Content -->
-        <Grid Grid.Column="2" Name="ReviewResultsGrid" Background="White" Visibility="Visible">
+        <Grid Grid.Column="2" Name="ReviewResultsGrid" Background="White" Visibility="Collapsed"
+              >
 
             <Grid.RowDefinitions>
                 <!-- Header -->

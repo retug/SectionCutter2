@@ -208,24 +208,31 @@ namespace SectionCutter
                 return;
             }
 
-            // Add a small padding in world space
+            // Pad bounds in world space
             double pad = Math.Max(bounds.Width, bounds.Height) * 0.05;
-            var padded = new Rect(bounds.X - pad, bounds.Y - pad, bounds.Width + 2 * pad, bounds.Height + 2 * pad);
+            var b = new Rect(bounds.X - pad, bounds.Y - pad, bounds.Width + 2 * pad, bounds.Height + 2 * pad);
 
-            double sx = ActualWidth / padded.Width;
-            double sy = ActualHeight / padded.Height;
+            double worldW = Math.Max(b.Width, 1e-6);
+            double worldH = Math.Max(b.Height, 1e-6);
+
+            double sx = ActualWidth / worldW;
+            double sy = ActualHeight / worldH;
             double s = Math.Min(sx, sy);
 
-            // Center padded bounds into control
-            var m = Matrix.Identity;
-            m.Translate(-padded.X, -padded.Y);
-            m.Scale(s, s);
+            // Center in world coordinates
+            double cx = b.X + b.Width / 2.0;
+            double cy = b.Y + b.Height / 2.0;
 
-            // After scale, compute translation to center
-            var scaledW = padded.Width * s;
-            var scaledH = padded.Height * s;
-            double tx = (ActualWidth - scaledW) * 0.5;
-            double ty = (ActualHeight - scaledH) * 0.5;
+            // Build view:
+            // - scale
+            // - flip Y so +Y is up (matches SectionCutPreviewControl)
+            // - translate world center to screen center
+            var m = Matrix.Identity;
+            m.Scale(s, -s);
+
+            double tx = (ActualWidth / 2.0) - (cx * s);
+            double ty = (ActualHeight / 2.0) + (cy * s);
+
             m.Translate(tx, ty);
 
             _view = m;
