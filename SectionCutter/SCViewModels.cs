@@ -66,6 +66,8 @@ namespace SectionCutter.ViewModels
 
         public ObservableCollection<string> SectionCutPrefixes { get; } = new();
 
+
+
         private string _selectedPrefix;
         public string SelectedPrefix
         {
@@ -111,6 +113,20 @@ namespace SectionCutter.ViewModels
         {
             get => _areasOutputText;
             set => SetProperty(ref _areasOutputText, value);
+        }
+
+        private double _chordDepthPercent = 100.0; // default = 100%
+        public double ChordDepthPercent
+        {
+            get => _chordDepthPercent;
+            set
+            {
+                // clamp 1 to 100
+                var v = value;
+                if (double.IsNaN(v) || double.IsInfinity(v)) v = 100.0;
+                v = Math.Max(1.0, Math.Min(100.0, v));
+                SetProperty(ref _chordDepthPercent, v);
+            }
         }
 
         public ICommand CreateCommand { get; }

@@ -552,7 +552,8 @@
 
 
         <!-- Review Results Content -->
-        <Grid Grid.Column="2" Name="ReviewResultsGrid" Background="White" Visibility="Collapsed"
+        <Grid Grid.Column="2" Name="ReviewResultsGrid" Background="White" Visibility="Visible"
+              
               >
 
             <Grid.RowDefinitions>
@@ -819,10 +820,34 @@
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
 
-                        <TextBlock Text="Tabular Results"
-                           FontSize="14"
-                           FontWeight="SemiBold"
-                           Margin="0,0,0,10"/>
+                        <Grid Grid.Row="0" Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Text="Tabular Results"
+               FontSize="14"
+               FontWeight="SemiBold"
+               VerticalAlignment="Center"/>
+
+                            <!-- Right aligned percent input -->
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="Percent of Diaphragm Depth for Chord Force"
+                                   Margin="0,0,10,0"
+                                   VerticalAlignment="Center"/>
+
+                                <TextBox x:Name="ChordPercentTextBox"
+                                     Width="70"
+                                     Height="26"
+                                     VerticalContentAlignment="Center"
+                                     Text="{Binding ChordDepthPercent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     PreviewTextInput="ChordPercentTextBox_PreviewTextInput"
+                                     LostFocus="ChordPercentTextBox_LostFocus"/>
+
+                                <TextBlock Text="%" Margin="6,0,0,0" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Grid>
 
                         <DataGrid Grid.Row="1"
                           x:Name="ResultsDataGrid"
@@ -837,11 +862,32 @@
 
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="Section Cut" Binding="{Binding Name}" Width="*"/>
-                                <DataGridTextColumn Header="Shear" Binding="{Binding Shear}" Width="120"/>
-                                <DataGridTextColumn Header="Moment" Binding="{Binding Moment}" Width="120"/>
-                                <DataGridTextColumn Header="Axial" Binding="{Binding Axial}" Width="120"/>
-                                <DataGridTextColumn Header="Length" Binding="{Binding Length}" Width="120"/>
+
+                                <DataGridTextColumn Header="Shear"
+                                    Binding="{Binding Shear, StringFormat={}{0:0.0}}"
+                                    Width="120"/>
+
+                                <DataGridTextColumn Header="Moment"
+                                    Binding="{Binding Moment, StringFormat={}{0:0.0}}"
+                                    Width="120"/>
+
+                                <DataGridTextColumn Header="Axial"
+                                    Binding="{Binding Axial, StringFormat={}{0:0.0}}"
+                                    Width="120"/>
+
+                                <DataGridTextColumn Header="Length"
+                                    Binding="{Binding Length, StringFormat={}{0:0.0}}"
+                                    Width="120"/>
+
+                                <DataGridTextColumn Header="Unit Shear"
+                                    Binding="{Binding UnitShear, StringFormat={}{0:0.0}}"
+                                    Width="120"/>
+
+                                <DataGridTextColumn Header="Chord Force Est."
+                                    Binding="{Binding ChordForce, StringFormat={}{0:0.0}}"
+                                    Width="140"/>
                             </DataGrid.Columns>
+
                         </DataGrid>
                     </Grid>
                 </Border>

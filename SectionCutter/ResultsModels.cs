@@ -33,6 +33,8 @@ namespace SectionCutter.ViewModels
         public double Axial { get; set; }
 
         public double Length { get; set; }
+        public double UnitShear { get; set; }
+        public double ChordForce { get; set; }
     }
 
     public class ResultCutPlotItem

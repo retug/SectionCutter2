@@ -362,6 +362,7 @@ namespace SectionCutter
             }
 
             // ---------- 6) Populate plot-bound cut collections ----------
+            UpdateDerivedResultColumns();
             ApplyResultsToPlots();
         }
 
@@ -712,6 +713,84 @@ namespace SectionCutter
             ViewModel.SavedSectionCut = vm;
 
             ViewModel.ValidateFields();
+        }
+
+        private void UpdateDerivedResultColumns()
+        {
+            if (ViewModel == null) return;
+
+            // Units
+            GetUnits(ViewModel.ResultsUnitsLabel, out var forceU, out var momentU, out var lengthU);
+
+            // Percent (1-100)
+            double p = ViewModel.ChordDepthPercent;
+            double depthFrac = p / 100.0;
+            if (depthFrac <= 0) depthFrac = 1.0;
+
+            foreach (var r in ViewModel.ResultsRows)
+            {
+                if (r == null) continue;
+
+                // Unit Shear = Shear / Length
+                if (Math.Abs(r.Length) > 1e-9)
+                    r.UnitShear = r.Shear / r.Length;
+                else
+                    r.UnitShear = 0.0;
+
+                // Chord Force Est = Moment / (Length * depthFrac)
+                // Units: (kip*ft)/(ft)=kip, (kN*m)/(m)=kN
+                if (Math.Abs(r.Length * depthFrac) > 1e-9)
+                    r.ChordForce = r.Moment / (r.Length * depthFrac);
+                else
+                    r.ChordForce = 0.0;
+            }
+
+            // Refresh the grid view (since rows are POCOs)
+            ResultsDataGrid?.Items.Refresh();
+
+            // Update headers to include correct units
+            UpdateResultsGridHeaders(forceU, momentU, lengthU);
+        }
+
+        private void UpdateResultsGridHeaders(string forceU, string momentU, string lengthU)
+        {
+            // Unit Shear units = force/length
+            string unitShearU = $"{forceU}/{lengthU}";
+            string chordU = forceU; // chord force estimate is force
+
+            // Update column headers (adjust indexes if your order differs)
+            if (ResultsDataGrid == null || ResultsDataGrid.Columns.Count < 7) return;
+
+            // Example assumes columns:
+            // 0 Name, 1 Shear, 2 UnitShear, 3 Moment, 4 Axial, 5 ChordForce, 6 Length
+            ResultsDataGrid.Columns[1].Header = $"Shear ({forceU})";
+            ResultsDataGrid.Columns[2].Header = $"Moment ({momentU})";
+            ResultsDataGrid.Columns[3].Header = $"Axial ({forceU})";
+            ResultsDataGrid.Columns[4].Header = $"Length ({lengthU})";
+            ResultsDataGrid.Columns[5].Header = $"Unit Shear ({unitShearU})";
+            ResultsDataGrid.Columns[6].Header = $"Chord Force Est. ({chordU})";
+        }
+
+        private void ChordPercentTextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        {
+            // allow digits and decimal point only
+            e.Handled = !e.Text.All(c => char.IsDigit(c) || c == '.');
+        }
+
+        private void ChordPercentTextBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            if (ChordPercentTextBox == null || ViewModel == null) return;
+
+            if (!double.TryParse(ChordPercentTextBox.Text, out var v))
+                v = ViewModel.ChordDepthPercent;
+
+            // setter clamps 1..100
+            ViewModel.ChordDepthPercent = v;
+
+            // make textbox reflect clamped formatted value
+            ChordPercentTextBox.Text = ViewModel.ChordDepthPercent.ToString("0.##");
+
+            UpdateDerivedResultColumns();
         }
 
         private void SyncUnitCheckBoxesFromUnits(string units)
