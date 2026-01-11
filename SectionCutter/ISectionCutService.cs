@@ -13,5 +13,7 @@ namespace SectionCutter
         /// and returns a SectionCutSet representing the generated cuts.
         /// </summary>
         SectionCutSet CreateEtabsSectionCuts(SectionCut definition);
+        // NEW:
+        void DeleteEtabsSectionCutsByPrefix(string prefix);
     }
 }

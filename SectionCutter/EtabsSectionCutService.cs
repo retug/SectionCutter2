@@ -308,6 +308,129 @@ namespace SectionCutter
             return eUnits.kip_ft_F;
         }
 
+        public void DeleteEtabsSectionCutsByPrefix(string prefix)
+        {
+            if (string.IsNullOrWhiteSpace(prefix))
+                return;
+
+            string tableKey = "Section Cut Definitions";
+
+            // Field names (match what ETABS expects for this table)
+            string[] fieldKeys = new string[]
+            {
+        "Name", "DefinedBy", "Group", "ResultType", "ResultLoc",
+        "RotAboutZ", "RotAboutY", "RotAboutX",
+        "ElementSide", "NumQuads", "QuadNum", "PointNum",
+        "QuadX", "QuadY", "QuadZ", "GUID"
+            };
+
+            // ----------------------------
+            // 1) Read existing table rows
+            // ----------------------------
+            string[] fieldKeyList = null;
+            string groupName = "All";
+            int tableVersion = 1;
+            string[] fieldKeysIncluded = null;
+            int existingRecords = 0;
+            string[] existingData = null;
+
+            int ret = _sapModel.DatabaseTables.GetTableForDisplayArray(
+                tableKey,
+                ref fieldKeyList,
+                groupName,
+                ref tableVersion,
+                ref fieldKeysIncluded,
+                ref existingRecords,
+                ref existingData);
+
+            if (ret != 0 || existingRecords <= 0 || existingData == null || fieldKeysIncluded == null)
+                return;
+
+            // Map included fields -> our fieldKeys order (same strategy as WriteSectionCutTableToEtabs)
+            var idxMap = BuildIndexMap(fieldKeysIncluded, fieldKeys);
+
+            int nf = fieldKeysIncluded.Length;
+            int cols = fieldKeys.Length;
+
+            var keptRows = new List<List<string>>();
+
+            // IMPORTANT: ETABS often stores Name only on the first row; continuation rows can have blank Name.
+            // So we propagate the last non-empty Name.
+            string currentName = string.Empty;
+
+            for (int r = 0; r < existingRecords; r++)
+            {
+                int b = r * nf;
+                if (b + nf > existingData.Length) break;
+
+                var row = new List<string>(cols);
+
+                for (int c = 0; c < cols; c++)
+                {
+                    int src = idxMap[c];
+                    row.Add(src >= 0 ? existingData[b + src] : "");
+                }
+
+                string rawName = (row[0] ?? "").Trim();
+
+                if (!string.IsNullOrWhiteSpace(rawName))
+                    currentName = rawName; // update the carried-forward name
+
+                string effectiveName = currentName;
+
+                // If we still have no effective name, keep row (nothing to match against)
+                if (string.IsNullOrWhiteSpace(effectiveName))
+                {
+                    keptRows.Add(row);
+                    continue;
+                }
+
+                // Remove rows belonging to any cut whose effective name starts with the prefix
+                if (!effectiveName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                    keptRows.Add(row);
+            }
+
+            // ----------------------------
+            // 2) Write back filtered table
+            // ----------------------------
+            string[] tableData = keptRows.SelectMany(x => x).ToArray();
+            int numberRecords = keptRows.Count;
+
+            tableVersion = 1;
+
+            ret = _sapModel.DatabaseTables.SetTableForEditingArray(
+                tableKey,
+                ref tableVersion,
+                ref fieldKeys,
+                numberRecords,
+                ref tableData);
+
+            if (ret != 0)
+                throw new InvalidOperationException("Failed to set ETABS section cut table for editing (delete).");
+
+            bool fillImportLog = true;
+            int numFatalErrors = 0;
+            int numErrorMsgs = 0;
+            int numWarnMsgs = 0;
+            int numInfoMsgs = 0;
+            string importLog = string.Empty;
+
+            ret = _sapModel.DatabaseTables.ApplyEditedTables(
+                fillImportLog,
+                ref numFatalErrors,
+                ref numErrorMsgs,
+                ref numWarnMsgs,
+                ref numInfoMsgs,
+                ref importLog);
+
+            if (ret != 0 || numFatalErrors > 0)
+            {
+                throw new InvalidOperationException(
+                    $"ETABS ApplyEditedTables failed during delete. FatalErrors={numFatalErrors}, Errors={numErrorMsgs}, Log={importLog}");
+            }
+        }
+
+
         /// <summary>
         /// Uses ETABS AreaObj + PointObj to get polygon points for an area,
         /// converts them to local coordinates, builds line segments,

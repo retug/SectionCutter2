@@ -27,6 +27,8 @@ namespace SectionCutter
         // Results service (Step 3)
         private IEtabsResultsService _resultsService;
 
+        private ISectionCutService _sectionCutService;
+
         // Cache “all-components” results so dropdown swaps don’t re-query ETABS
         private Dictionary<string, CutResultAll> _cutResultsAll = new(StringComparer.OrdinalIgnoreCase);
 
@@ -53,7 +55,8 @@ namespace SectionCutter
 
             // Create the ETABS-backed SectionCut service and inject into the ViewModel
             ISectionCutService service = new EtabsSectionCutService(_SapModel, _jsonStore);
-            ViewModel = new SCViewModel(_SapModel, service);
+            _sectionCutService = new EtabsSectionCutService(_SapModel, _jsonStore);
+            ViewModel = new SCViewModel(_SapModel, _sectionCutService);
 
             // Results service (Step 3)
             _resultsService = new EtabsResultsService(_SapModel);
@@ -775,6 +778,81 @@ namespace SectionCutter
         {
             // allow digits and decimal point only
             e.Handled = !e.Text.All(c => char.IsDigit(c) || c == '.');
+        }
+
+        private void ReloadResultsPrefixes()
+        {
+            if (ViewModel == null) return;
+
+            ViewModel.ResultsPrefixes.Clear();
+
+            // Whatever method you already have that returns all saved set prefixes
+            // (examples: GetAllPrefixes(), GetSectionCutPrefixes(), LoadAllPrefixes(), etc.)
+            var prefixes = _jsonStore.GetAllPrefixes();
+
+            foreach (var p in prefixes)
+                ViewModel.ResultsPrefixes.Add(p);
+
+            // If current selection no longer exists, clear it
+            if (!string.IsNullOrWhiteSpace(ViewModel.SelectedResultsPrefix) &&
+                !prefixes.Any(x => string.Equals(x, ViewModel.SelectedResultsPrefix, StringComparison.OrdinalIgnoreCase)))
+            {
+                ViewModel.SelectedResultsPrefix = null;
+            }
+        }
+
+        private void DeleteSelectedSet_Click(object sender, RoutedEventArgs e)
+        {
+            if (ViewModel == null) return;
+
+            var prefix = ViewModel.SelectedPrefix;
+            if (string.IsNullOrWhiteSpace(prefix))
+            {
+                MessageBox.Show("Select a section cut set to delete first.");
+                return;
+            }
+
+            var confirm = MessageBox.Show(
+                $"Delete section cut set \"{prefix}\"?\n\n" +
+                "- Removes it from SectionCut.json\n" +
+                "- Deletes all ETABS section cuts with names starting with this prefix",
+                "Confirm Delete",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (confirm != MessageBoxResult.Yes)
+                return;
+
+            try
+            {
+                // 1) Remove from ETABS definitions
+                _sectionCutService.DeleteEtabsSectionCutsByPrefix(prefix);
+
+                // 2) Remove from JSON
+                _jsonStore.DeleteByPrefix(prefix);
+
+                // 3) Refresh UI lists
+                ReloadFromJsonAndPlot();          // refresh "Created Section Cut Set" pane
+                ReloadResultsPrefixes();          // refresh results prefixes dropdown if you have this method
+                ViewModel.SelectedPrefix = null;
+
+                // Optional: clear plots/results if they referenced this prefix
+                if (string.Equals(ViewModel.SelectedResultsPrefix, prefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    ViewModel.SelectedResultsPrefix = null;
+                    ViewModel.ResultsRows.Clear();
+                    ClearResultsPlots();
+                    ClearResultsMeta();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"Failed to delete set \"{prefix}\":\n{ex.Message}",
+                    "Delete Failed",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
         }
 
         private void ChordPercentTextBox_LostFocus(object sender, RoutedEventArgs e)

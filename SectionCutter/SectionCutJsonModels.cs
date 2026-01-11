@@ -227,6 +227,28 @@ namespace SectionCutter
             return SaveSetResult.Added;
         }
 
+        public bool DeleteByPrefix(string prefix)
+        {
+            if (string.IsNullOrWhiteSpace(prefix))
+                return false;
+
+            if (!TryLoadRoot(out var root) || root?.Sets == null)
+                return false;
+
+            int before = root.Sets.Count;
+
+            root.Sets = root.Sets
+                .Where(s => s != null && !string.Equals(s.SectionCutPrefix, prefix, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            if (root.Sets.Count == before)
+                return false; // nothing removed
+
+            SaveRoot(root);
+            return true;
+        }
+
+
         private void SaveRoot(SectionCutJsonRoot root)
         {
             var path = GetJsonPathForCurrentModel();

@@ -2,11 +2,14 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:SectionCutter"
+        xmlns:converters="clr-namespace:SectionCutter.Converters"
         Title="Section Cutter 2" Height="1000" Width="1200"
         WindowStartupLocation="CenterScreen" Background="White">
 
 
     <Window.Resources>
+        <!-- Converters -->
+        <converters:NullOrEmptyToBoolConverter x:Key="NullOrEmptyToBoolConverter"/>
         <SolidColorBrush x:Key="AccentBrush" Color="#ff8c69"/>
         <SolidColorBrush x:Key="DefaultIconBg" Color="Black"/>
         <SolidColorBrush x:Key="DefaultText" Color="White"/>
@@ -454,11 +457,28 @@
                     <!-- Dropdown -->
                     <StackPanel Grid.Row="1" Margin="0,12,0,0">
                         <TextBlock Text="Created Section Cut Set"
-                           FontWeight="SemiBold"
-                           Margin="0,0,0,6"/>
-                        <ComboBox ItemsSource="{Binding SectionCutPrefixes}"
-                          SelectedItem="{Binding SelectedPrefix}"
-                          Height="30"/>
+               FontWeight="SemiBold"
+               Margin="0,0,0,6"/>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="10"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <ComboBox Grid.Column="0"
+                  ItemsSource="{Binding SectionCutPrefixes}"
+                  SelectedItem="{Binding SelectedPrefix}"
+                  Height="30"/>
+
+                            <Button Grid.Column="2"
+                Content="Delete"
+                Height="30"
+                Padding="12,0"
+                Click="DeleteSelectedSet_Click"
+                IsEnabled="{Binding SelectedPrefix, Converter={StaticResource NullOrEmptyToBoolConverter}}"/>
+                        </Grid>
                     </StackPanel>
 
                     <!-- Start node + vector + height + units -->
@@ -552,7 +572,7 @@
 
 
         <!-- Review Results Content -->
-        <Grid Grid.Column="2" Name="ReviewResultsGrid" Background="White" Visibility="Visible"
+        <Grid Grid.Column="2" Name="ReviewResultsGrid" Background="White" Visibility="Collapsed"
               
               >
 
