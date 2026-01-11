@@ -360,6 +360,26 @@ namespace SectionCutter
             ViewModel.ResultsHeightLabel = null;
             ViewModel.ResultsUnitsLabel = null;
         }
+
+        private static void GetUnits(string unitsString, out string forceU, out string momentU, out string lengthU)
+        {
+            var u = (unitsString ?? "").ToLowerInvariant();
+
+            bool metric = u.Contains("kn"); // "kN, m"
+            forceU = metric ? "kN" : "kip";
+            momentU = metric ? "kN*m" : "kip*ft";
+            lengthU = metric ? "m" : "ft";
+        }
+
+        private static string GetValueUnitForComponent(string component, string forceU, string momentU)
+        {
+            switch ((component ?? "").Trim().ToLowerInvariant())
+            {
+                case "moment": return momentU;
+                case "axial": return forceU;
+                default: return forceU; // shear
+            }
+        }
         //TEMP: need to eventually remove.
         private void PopulateCutLinesFromSegmentsOnly(Dictionary<string, SectionCutCutSegmentXY> cutSegByName)
         {
@@ -394,6 +414,36 @@ namespace SectionCutter
 
             var plot1Cuts = BuildResultCutsForComponent(comp1);
             var plot2Cuts = BuildResultCutsForComponent(comp2);
+
+            // Units context for results (driven by JSON prefix selection)
+            GetUnits(ViewModel.ResultsUnitsLabel, out var forceU, out var momentU, out var lengthU);
+
+            var v1U = GetValueUnitForComponent(comp1, forceU, momentU);
+            var v2U = GetValueUnitForComponent(comp2, forceU, momentU);
+
+            // Plot labels + tooltip units
+            if (ResultsPlot1 != null)
+            {
+                ResultsPlot1.DiagramLabel = $"{comp1} ({v1U})";
+                ResultsPlot1.ValueUnits = v1U;
+                ResultsPlot1.LengthUnits = lengthU;
+            }
+            if (ResultsPlot2 != null)
+            {
+                ResultsPlot2.DiagramLabel = $"{comp2} ({v2U})";
+                ResultsPlot2.ValueUnits = v2U;
+                ResultsPlot2.LengthUnits = lengthU;
+            }
+
+            // DataGrid column headers with units
+            if (ResultsDataGrid != null && ResultsDataGrid.Columns.Count >= 5)
+            {
+                ResultsDataGrid.Columns[1].Header = $"Shear ({forceU})";
+                ResultsDataGrid.Columns[2].Header = $"Moment ({momentU})";
+                ResultsDataGrid.Columns[3].Header = $"Axial ({forceU})";
+                ResultsDataGrid.Columns[4].Header = $"Length ({lengthU})";
+            }
+
 
             // Push into VM collections (binding target)
             ViewModel.ResultsPlot1Cuts.Clear();

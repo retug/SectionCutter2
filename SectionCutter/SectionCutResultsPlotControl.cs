@@ -113,6 +113,45 @@ namespace SectionCutter
             set => SetValue(SelectedCutNameProperty, value);
         }
 
+        public static readonly DependencyProperty DiagramLabelProperty =
+    DependencyProperty.Register(
+        nameof(DiagramLabel),
+        typeof(string),
+        typeof(SectionCutResultsPlotControl),
+        new FrameworkPropertyMetadata("", FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public string DiagramLabel
+        {
+            get => (string)GetValue(DiagramLabelProperty);
+            set => SetValue(DiagramLabelProperty, value);
+        }
+
+        public static readonly DependencyProperty ValueUnitsProperty =
+            DependencyProperty.Register(
+                nameof(ValueUnits),
+                typeof(string),
+                typeof(SectionCutResultsPlotControl),
+                new FrameworkPropertyMetadata("", FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public string ValueUnits
+        {
+            get => (string)GetValue(ValueUnitsProperty);
+            set => SetValue(ValueUnitsProperty, value);
+        }
+
+        public static readonly DependencyProperty LengthUnitsProperty =
+            DependencyProperty.Register(
+                nameof(LengthUnits),
+                typeof(string),
+                typeof(SectionCutResultsPlotControl),
+                new FrameworkPropertyMetadata("", FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public string LengthUnits
+        {
+            get => (string)GetValue(LengthUnitsProperty);
+            set => SetValue(LengthUnitsProperty, value);
+        }
+
         // ----------------------------
         // View / interaction state (pan/zoom)
         // ----------------------------
@@ -310,14 +349,30 @@ namespace SectionCutter
 
 
             dc.Pop(); // transform
+            // Plot label (screen-space)
+            if (!string.IsNullOrWhiteSpace(DiagramLabel))
+            {
+                DrawPlotLabel(dc, DiagramLabel, new Point(12, 8));
+            }
 
             // Hover tooltip (screen-space)
             if (_hoverCut != null)
             {
+                var lenU = string.IsNullOrWhiteSpace(LengthUnits) ? "" : $" {LengthUnits}";
+                var valU = string.IsNullOrWhiteSpace(ValueUnits) ? "" : $" {ValueUnits}";
+
+                // Prefer using DiagramLabel’s component name (e.g., "Shear (kip)") for tooltip heading
+                string valueLabel = "Value";
+                if (!string.IsNullOrWhiteSpace(DiagramLabel))
+                {
+                    // If DiagramLabel is "Shear (kip)", use "Shear"
+                    valueLabel = DiagramLabel.Split('(')[0].Trim();
+                }
+
                 string text =
                     $"{_hoverCut.Name}\n" +
-                    $"Length: {_hoverCut.Length:0.###}\n" +
-                    $"Value: {_hoverCut.Value:0.###}";
+                    $"Length: {_hoverCut.Length:0.###}{lenU}\n" +
+                    $"{valueLabel}: {_hoverCut.Value:0.###}{valU}";
 
                 DrawTooltip(dc, text, _lastMouse);
             }
@@ -467,6 +522,29 @@ namespace SectionCutter
 
             dc.DrawText(ft, new Point(x + pad, y + pad));
         }
+
+        private void DrawPlotLabel(DrawingContext dc, string text, Point screenPt)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return;
+
+            var ft = new FormattedText(
+                text,
+                CultureInfo.InvariantCulture,
+                FlowDirection.LeftToRight,
+                new Typeface("Segoe UI"),
+                13,
+                Brushes.Black,
+                VisualTreeHelper.GetDpi(this).PixelsPerDip);
+
+            // white “chip” behind text, like your other headers
+            var padX = 6.0;
+            var padY = 3.0;
+            var r = new Rect(screenPt.X, screenPt.Y, ft.Width + 2 * padX, ft.Height + 2 * padY);
+
+            dc.DrawRoundedRectangle(Brushes.White, new Pen(new SolidColorBrush(Color.FromRgb(0xDD, 0xDD, 0xDD)), 1), r, 6, 6);
+            dc.DrawText(ft, new Point(screenPt.X + padX, screenPt.Y + padY));
+        }
+
 
         // ----------------------------
         // Interaction
