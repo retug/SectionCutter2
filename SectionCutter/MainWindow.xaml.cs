@@ -9,6 +9,8 @@ using SectionCutter.ViewModels;
 using System.Collections.ObjectModel;
 using System.Collections.Generic;
 using System.Linq;
+using System.Globalization;
+using System.Text;
 
 namespace SectionCutter
 {
@@ -1236,6 +1238,62 @@ namespace SectionCutter
                 ViewModel.SectionCut.Units = "kN, m";
                 ViewModel.ValidateFields();
             }
+        }
+
+        private void CopyResultsToClipboard_Click(object sender, RoutedEventArgs e)
+        {
+            if (ViewModel?.ResultsRows == null || ViewModel.ResultsRows.Count == 0)
+            {
+                Clipboard.SetText("");
+                return;
+            }
+
+            // Determine unit system (based on your existing Units string, e.g. "kip, ft" or "kN, m")
+            string unitsRaw = (ViewModel.SectionCut?.Units ?? "").Trim().ToLowerInvariant();
+            bool isMetric = unitsRaw.Contains("kn");  // "kN, m"
+
+            // Header units
+            string force = isMetric ? "kN" : "kip";
+            string length = isMetric ? "m" : "ft";
+            string moment = isMetric ? "kN-m" : "kip-ft";
+            string unitShear = isMetric ? "kN/m" : "kip/ft";
+
+            var sb = new StringBuilder();
+
+            // Header row (tab-delimited)
+            sb.Append("Section Cut").Append('\t');
+            sb.Append($"Shear ({force})").Append('\t');
+            sb.Append($"Moment ({moment})").Append('\t');
+            sb.Append($"Axial ({force})").Append('\t');
+            sb.Append($"Length ({length})").Append('\t');
+            sb.Append($"Unit Shear ({unitShear})").Append('\t');
+            sb.Append($"Chord Force Est. ({force})").AppendLine();
+
+            // Data rows
+            foreach (var r in ViewModel.ResultsRows)
+            {
+                string name = r?.Name ?? "";
+
+                // Use invariant culture so decimals paste cleanly into Sheets/Excel
+                string shearVal = r.Shear.ToString("0.0", CultureInfo.InvariantCulture);
+                string momentVal = r.Moment.ToString("0.0", CultureInfo.InvariantCulture);
+                string axialVal = r.Axial.ToString("0.0", CultureInfo.InvariantCulture);
+                string lengthVal = r.Length.ToString("0.0", CultureInfo.InvariantCulture);
+
+                // These assume your row model has UnitShear and ChordForce props (as shown in your grid)
+                string unitShearVal = r.UnitShear.ToString("0.0", CultureInfo.InvariantCulture);
+                string chordForceVal = r.ChordForce.ToString("0.0", CultureInfo.InvariantCulture);
+
+                sb.Append(name).Append('\t')
+                  .Append(shearVal).Append('\t')
+                  .Append(momentVal).Append('\t')
+                  .Append(axialVal).Append('\t')
+                  .Append(lengthVal).Append('\t')
+                  .Append(unitShearVal).Append('\t')
+                  .Append(chordForceVal).AppendLine();
+            }
+
+            Clipboard.SetText(sb.ToString());
         }
     }
 }

@@ -843,17 +843,37 @@
 
                         <Grid Grid.Row="0" Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
+                                <!-- Title -->
+                                <ColumnDefinition Width="*"/>
+                                <!-- Center region -->
+                                <ColumnDefinition Width="Auto"/>
+                                <!-- Right input -->
                             </Grid.ColumnDefinitions>
 
-                            <TextBlock Text="Tabular Results"
-               FontSize="14"
-               FontWeight="SemiBold"
-               VerticalAlignment="Center"/>
+                            <!-- Left: Title -->
+                            <TextBlock Grid.Column="0"
+                               Text="Tabular Results"
+                               FontSize="14"
+                               FontWeight="SemiBold"
+                               VerticalAlignment="Center"/>
 
-                            <!-- Right aligned percent input -->
-                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                            <!-- Center: Copy button (centered) -->
+                            <Button Grid.Column="1"
+                                Content="Copy"
+                                Height="28"
+                                Padding="12,0"
+                                Margin="0,0,0,0"
+                                Style="{StaticResource HoverAccentButton}"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Click="CopyResultsToClipboard_Click"/>
+
+                            <!-- Right: percent input -->
+                            <StackPanel Grid.Column="2"
+                                Orientation="Horizontal"
+                                VerticalAlignment="Center"
+                                HorizontalAlignment="Right">
                                 <TextBlock Text="Percent of Diaphragm Depth for Chord Force"
                                    Margin="0,0,10,0"
                                    VerticalAlignment="Center"/>
@@ -869,6 +889,7 @@
                                 <TextBlock Text="%" Margin="6,0,0,0" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Grid>
+
 
                         <DataGrid Grid.Row="1"
                           x:Name="ResultsDataGrid"
