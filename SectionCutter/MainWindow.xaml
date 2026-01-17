@@ -4,7 +4,8 @@
         xmlns:local="clr-namespace:SectionCutter"
         xmlns:converters="clr-namespace:SectionCutter.Converters"
         Title="Section Cutter 2" Height="1000" Width="1200"
-        WindowStartupLocation="CenterScreen" Background="White">
+        WindowStartupLocation="CenterScreen" Background="White"
+        Icon="Assets/Icons/retug.ico">
 
 
     <Window.Resources>
@@ -32,7 +33,7 @@
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="50"/>
-            <ColumnDefinition x:Name="SidebarColumn" Width="200" />
+            <ColumnDefinition x:Name="SidebarColumn" Width="0" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 

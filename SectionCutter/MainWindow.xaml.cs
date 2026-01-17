@@ -89,6 +89,8 @@ namespace SectionCutter
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
+            // ✅ Default view: Create Section Cuts
+            SetSelected("cuts");
             try
             {
                 ReloadFromJsonAndPlot();
