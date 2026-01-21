@@ -2,13 +2,13 @@
 
 ## Overview
 
-**SectionCutter2** is an ETABS plugin developed to help structural engineers **quickly create section cuts and visually review diaphragm shear, moment, and axial force results** in a clear, intuitive, and repeatable way.
+SectionCutter2 is an ETABS plugin developed to help structural engineers quickly create section cuts and visually review diaphragm shear, moment, and axial force results in a clear, intuitive, and repeatable way.
 
 Rather than relying solely on tabular output or manually defining section cuts one by one, this tool streamlines the process by combining interactive geometry, automated ETABS section cut creation, and visual result plotting into a single workflow.
 
 The goal is simple:
 
-> Understand diaphragm force flow faster and with more confidence.
+Understand diaphragm force flow faster and with more confidence.
 
 ---
 
@@ -23,7 +23,7 @@ https://www.youtube.com/watch?v=h55M_A2X-0I
 
 ![Section Cut Creation and Results Plot](SectionCutter/docs/sectioncut_workflow.gif)
 
-Created Section Cuts
+### Created Section Cuts
 
 ![Section Cuts Created](SectionCutter/docs/sectioncuts_created.png)
 
@@ -35,7 +35,7 @@ This example demonstrates:
 
 ---
 
-### Iterative Force Path Exploration
+### Review Diaphragm Results
 
 ![Iterative Results Review](SectionCutter/docs/sectioncut_iteration.gif)
 
