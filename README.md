@@ -1,17 +1,50 @@
-# SectionCutter2 – Visual Diaphragm Results Review for ETABS
+# SectionCutter2
 
 ## Overview
 
 **SectionCutter2** is an ETABS plugin developed to help structural engineers **quickly create section cuts and visually review diaphragm shear, moment, and axial force results** in a clear, intuitive, and repeatable way.
 
-Rather than relying solely on tabular output or manually defining section cuts one-by-one, this tool streamlines the process by combining **interactive geometry**, **automated ETABS section cut creation**, and **visual result plotting** into a single workflow.
+Rather than relying solely on tabular output or manually defining section cuts one by one, this tool streamlines the process by combining interactive geometry, automated ETABS section cut creation, and visual result plotting into a single workflow.
 
 The goal is simple:
 
-> **Understand diaphragm force flow faster and with more confidence.**
+> Understand diaphragm force flow faster and with more confidence.
 
 ---
 
+Installation and how to use video:  
+https://www.youtube.com/watch?v=h55M_A2X-0I
+
+---
+
+## Example Workflows
+
+### Visual Section Cut Review
+
+![Section Cut Creation and Results Plot](SectionCutter/docs/sectioncut_workflow.gif)
+
+Created Section Cuts
+
+![Section Cuts Created](SectionCutter/docs/sectioncuts_created.png)
+
+This example demonstrates:
+- Selecting diaphragm areas
+- Defining section cut spacing
+- Automatic section cut generation
+- Immediate plotting of diaphragm force results
+
+---
+
+### Iterative Force Path Exploration
+
+![Iterative Results Review](SectionCutter/docs/sectioncut_iteration.gif)
+
+This example demonstrates:
+- Adjusting section cut spacing or direction
+- Regenerating results
+- Rapid visual comparison of force distributions
+
+---
 ## Why This Tool Exists
 
 Reviewing diaphragm forces in ETABS can be:
@@ -113,45 +146,6 @@ Alongside the plots, the application provides:
 - Clear correlation between geometry and numeric output
 
 The table and plots are designed to work together — numbers for precision, graphics for understanding.
-
----
-
-## Example Workflows
-
-### Visual Section Cut Review
-
-![Section Cut Creation and Results Plot](SectionCutter/docs/sectioncut_workflow.gif)
-
-Created Section Cuts
-
-![Section Cut Creation and Results Plot](SectionCutter/docs/sectioncuts_created.png)
-
-This example demonstrates:
-- Selecting diaphragm areas
-- Defining section cut spacing
-- Automatic section cut generation
-- Immediate plotting of diaphragm force results
-
----
-
-### Iterative Force Path Exploration
-
-![Iterative Results Review](SectionCutter/docs/sectioncut_iteration.gif)
-
-This example demonstrates:
-- Adjusting section cut spacing or direction
-- Regenerating results
-- Rapid visual comparison of force distributions
-
----
-
-## Who This Tool Is For
-
-- Structural engineers working in ETABS
-- Engineers designing or reviewing diaphragms
-- Engineers who prefer visual confirmation of force flow
-- Teams looking to reduce repetitive ETABS setup work
-- Anyone reviewing diaphragm forces beyond raw tables
 
 ---
 
