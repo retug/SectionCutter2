@@ -1206,6 +1206,96 @@ namespace SectionCutter
             }
         }
 
+        private void PositiveDecimalInput_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        {
+            if (sender is not TextBox tb) { e.Handled = true; return; }
+
+            // Use the user's current culture decimal separator (usually "." in US)
+            string dec = System.Globalization.CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator;
+
+            // Only allow digits or the decimal separator
+            if (!char.IsDigit(e.Text, 0) && e.Text != dec)
+            {
+                e.Handled = true;
+                return;
+            }
+
+            string proposed = GetProposedText(tb, e.Text);
+
+            // Allow empty / in-progress states while typing
+            if (string.IsNullOrWhiteSpace(proposed) || proposed == dec)
+            {
+                e.Handled = false;
+                return;
+            }
+
+            // Only one decimal separator
+            if (proposed.Count(c => c.ToString() == dec) > 1)
+            {
+                e.Handled = true;
+                return;
+            }
+
+            // Must be a non-negative number when it *is* parseable
+            if (double.TryParse(proposed, out double v))
+            {
+                e.Handled = v < 0;
+                return;
+            }
+
+            // If it's not parseable (beyond the "in-progress" cases), block it
+            e.Handled = true;
+        }
+
+        private void PositiveDecimalInput_Pasting(object sender, DataObjectPastingEventArgs e)
+        {
+            if (sender is not TextBox tb) { e.CancelCommand(); return; }
+
+            if (!e.DataObject.GetDataPresent(DataFormats.Text))
+            {
+                e.CancelCommand();
+                return;
+            }
+
+            string paste = (e.DataObject.GetData(DataFormats.Text) as string) ?? "";
+            string proposed = GetProposedText(tb, paste);
+
+            // Same rules as typing, but for the whole string
+            if (!IsValidPositiveDecimalText(proposed))
+                e.CancelCommand();
+        }
+
+        private static bool IsValidPositiveDecimalText(string text)
+        {
+            text = (text ?? "").Trim();
+            if (text.Length == 0) return true;
+
+            string dec = System.Globalization.CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator;
+
+            // Only digits + at most one decimal separator
+            int decCount = 0;
+            foreach (char c in text)
+            {
+                if (char.IsDigit(c)) continue;
+
+                if (c.ToString() == dec)
+                {
+                    decCount++;
+                    if (decCount > 1) return false;
+                    continue;
+                }
+
+                return false;
+            }
+
+            // Allow "." or "1." as "in-progress"
+            if (text == dec) return true;
+
+            // Parseable + non-negative
+            return double.TryParse(text, out double v) && v >= 0;
+        }
+
+
         private string GetProposedText(TextBox textBox, string input)
         {
             string currentText = textBox.Text;

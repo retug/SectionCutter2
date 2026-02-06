@@ -201,9 +201,10 @@
                             <StackPanel Grid.Column="0" Margin="0,0,10,0">
                                 <TextBlock Text="X Vector" FontWeight="Bold" Margin="5,0,0,5"/>
                                 <TextBox x:Name="XVectorInput"
-                                     Text= "{Binding SectionCut.XVector, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     Text="{Binding SectionCut.XVector, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
                                      Height="30"
-                                     PreviewTextInput="DecimalInput_PreviewTextInput"
+                                     PreviewTextInput="PositiveDecimalInput_PreviewTextInput"
+                                     DataObject.Pasting="PositiveDecimalInput_Pasting"
                                      BorderBrush="Gray" BorderThickness="1" Padding="5"/>
                             </StackPanel>
 
@@ -211,9 +212,10 @@
                             <StackPanel Grid.Column="1">
                                 <TextBlock Text="Y Vector" FontWeight="Bold" Margin="0,0,0,5"/>
                                 <TextBox x:Name="YVectorInput"
-                                     Text= "{Binding SectionCut.YVector, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     Text="{Binding SectionCut.YVector, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
                                      Height="30"
-                                     PreviewTextInput="DecimalInput_PreviewTextInput"
+                                     PreviewTextInput="PositiveDecimalInput_PreviewTextInput"
+                                     DataObject.Pasting="PositiveDecimalInput_Pasting"
                                      BorderBrush="Gray" BorderThickness="1" Padding="5"/>
                             </StackPanel>
                         </Grid>
