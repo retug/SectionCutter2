@@ -1,4 +1,4 @@
-# SectionCutter2
+ï»¿# SectionCutter2
 
 ## Overview
 
@@ -145,7 +145,7 @@ Alongside the plots, the application provides:
 - Tablular results can be copied and pasted to excel for own spreadsheet calculations
 - Clear correlation between geometry and numeric output
 
-The table and plots are designed to work together — numbers for precision, graphics for understanding.
+The table and plots are designed to work together â€” numbers for precision, graphics for understanding.
 
 ---
 
@@ -154,6 +154,48 @@ The table and plots are designed to work together — numbers for precision, graph
 Refer to the **installer** folder or the project releases for installation instructions and packaged builds.
 
 ---
+
+## Sloping Slabs / Sloped Diaphragms
+
+SectionCutter2 supports sloped diaphragms. When working with sloping slabs, it is important to properly define the **Section Cut Height Above** and **Section Cut Height Below** values so that the full diaphragm thickness and slope are captured by the section cut.
+
+![Sloping Slab Section Cuts](SectionCutter/docs/sloping_slab_cuts.png)
+
+---
+
+### Section Cut Vertical Extents
+
+The vertical span of a section cut is defined relative to the **Start Node elevation**.
+
+The section cut is centered at the Z-elevation of the selected Start Node and extends upward and downward based on the user-defined heights.
+
+For example:
+
+- Start Node elevation = 10 ft  
+- Height Above = 4 ft  (always positive)
+- Height Below = 4 ft  (always positive)
+
+The section cut vertical limits will be:
+
+- Lower bound = 10 ft âˆ’ 4 ft = 6 ft  
+- Upper bound = 10 ft + 4 ft = 14 ft  
+
+In this example, the section cut spans from **6 ft to 14 ft**.
+
+Both **Height Above** and **Height Below** are positive-only values.
+
+---
+
+### Best Practices for Sloped Diaphragms
+
+When analyzing sloping slabs:
+
+- Ensure the full sloped diaphragm geometry falls within the defined vertical Z range.
+- Increase the Height Above and Height Below values as needed to capture the highest and lowest points of the diaphragm along the section cut.
+- If the diaphragm falls outside this Z-offset range, forces may not be fully captured.
+
+---
+
 
 ## Notes & Limitations
 
