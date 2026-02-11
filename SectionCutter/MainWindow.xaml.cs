@@ -1162,17 +1162,23 @@ namespace SectionCutter
         // Input validation + unit toggles (unchanged)
         // ============================================================
 
-        private void DecimalInput_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        private void DecimalInput_Pasting(object sender, DataObjectPastingEventArgs e)
         {
-            // Allow digits and one decimal, non-negative
-            TextBox textBox = sender as TextBox;
-            string proposed = GetProposedText(textBox, e.Text);
+            if (sender is not TextBox tb) { e.CancelCommand(); return; }
 
-            if (!decimal.TryParse(proposed, out decimal result) || result < 0)
+            if (!e.DataObject.GetDataPresent(DataFormats.Text))
             {
-                e.Handled = true;
+                e.CancelCommand();
+                return;
             }
+
+            string paste = (e.DataObject.GetData(DataFormats.Text) as string) ?? "";
+            string proposed = GetProposedText(tb, paste);
+
+            if (!IsValidDecimalText(proposed))
+                e.CancelCommand();
         }
+
 
         private void IntegerInput_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
@@ -1247,35 +1253,54 @@ namespace SectionCutter
             e.Handled = true;
         }
 
-        private void PositiveDecimalInput_Pasting(object sender, DataObjectPastingEventArgs e)
+        private void DecimalInput_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
-            if (sender is not TextBox tb) { e.CancelCommand(); return; }
+            if (sender is not TextBox tb) { e.Handled = true; return; }
 
-            if (!e.DataObject.GetDataPresent(DataFormats.Text))
+            string dec = CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator;
+
+            // allow digits, decimal separator, and "-" (only if it would become the leading char)
+            if (!char.IsDigit(e.Text, 0) && e.Text != dec && e.Text != "-")
             {
-                e.CancelCommand();
+                e.Handled = true;
                 return;
             }
 
-            string paste = (e.DataObject.GetData(DataFormats.Text) as string) ?? "";
-            string proposed = GetProposedText(tb, paste);
+            string proposed = GetProposedText(tb, e.Text);
 
-            // Same rules as typing, but for the whole string
-            if (!IsValidPositiveDecimalText(proposed))
-                e.CancelCommand();
+            // allow in-progress states like "", "-", ".", "-."
+            if (!IsValidDecimalText(proposed))
+            {
+                e.Handled = true;
+                return;
+            }
+
+            e.Handled = false;
         }
 
-        private static bool IsValidPositiveDecimalText(string text)
+
+        private static bool IsValidDecimalText(string text)
         {
             text = (text ?? "").Trim();
             if (text.Length == 0) return true;
 
-            string dec = System.Globalization.CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator;
+            string dec = CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator;
 
-            // Only digits + at most one decimal separator
+            // allow just "-" or "." or "-." as "in-progress" text
+            if (text == "-" || text == dec || text == "-" + dec) return true;
+
             int decCount = 0;
-            foreach (char c in text)
+            for (int i = 0; i < text.Length; i++)
             {
+                char c = text[i];
+
+                // allow leading minus only
+                if (c == '-')
+                {
+                    if (i != 0) return false;
+                    continue;
+                }
+
                 if (char.IsDigit(c)) continue;
 
                 if (c.ToString() == dec)
@@ -1288,12 +1313,10 @@ namespace SectionCutter
                 return false;
             }
 
-            // Allow "." or "1." as "in-progress"
-            if (text == dec) return true;
-
-            // Parseable + non-negative
-            return double.TryParse(text, out double v) && v >= 0;
+            // Must be parseable as a decimal number once it's not an in-progress state
+            return double.TryParse(text, NumberStyles.Float, CultureInfo.CurrentCulture, out _);
         }
+
 
 
         private string GetProposedText(TextBox textBox, string input)
